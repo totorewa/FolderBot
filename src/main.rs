@@ -211,8 +211,7 @@ impl IRCBotClient {
             }
         };
 
-        if prefix != node.prefix
-        {
+        if prefix != node.prefix {
             log_res("Skipped as prefix does not match.");
             return Command::Continue;
         }
@@ -254,35 +253,35 @@ impl IRCBotClient {
                 }
             }
         };
+        lazy_static! {
+            static ref COMMAND_RE: Regex = Regex::new(r"^([^\s\w]?)(.*?)\s+(.+)$").unwrap();
+        }
         match command.as_str() {
             "meta:insert" | "meta:edit" => {
                 // Let's ... try to get this to work I guess.
-                match args.split_once(' ') {
-                    Some((newcmd, newresp)) => {
-                        if self.ct.contains(&newcmd.to_string()) && command != "meta:edit" {
-                            self.sender
-                                .send(TwitchFmt::privmsg(
-                                    &"Command already exists. Use !edit instead.".to_string(),
-                                    &self.channel,
-                                ))
-                                .await;
-                        } else {
-                            self.ct.insert(
-                                newcmd.to_string(),
-                                CommandNode::new(CmdValue::StringResponse(newresp.to_string())),
-                            );
-                            log_res("Saving commands to commands.json");
-                            self.ct.dump_file(Path::new("commands.json"));
-                        }
+                let (newprefix, newcmd, newresp) = match COMMAND_RE.captures(args.as_str()) {
+                    // there must be a better way...
+                    Some(caps) => (caps.str_at(1), caps.str_at(2), caps.str_at(2)),
+                    None => {
+                        self.sender.send(TwitchFmt::privmsg(&"Nice try, but you have been thwarted by the command regex! Mwuahaha.".to_string(), &self.channel,)).await;
+                        return Command::Continue;
                     }
-                    _ => self
-                        .sender
+                };
+                if self.ct.contains(&newcmd.to_string()) && command != "meta:edit" {
+                    self.sender
                         .send(TwitchFmt::privmsg(
-                            &"Two arguments are required.".to_string(),
+                            &"Command already exists. Use !edit instead.".to_string(),
                             &self.channel,
                         ))
-                        .await
-                        .unwrap(),
+                        .await;
+                } else {
+                    self.ct.insert(
+                        newcmd.to_string(),
+                        CommandNode::new(CmdValue::StringResponse(newresp.to_string()))
+                            .with_prefix(newprefix),
+                    );
+                    log_res("Saving commands to commands.json");
+                    self.ct.dump_file(Path::new("commands.json"));
                 }
             }
             "meta:isadmin" => self

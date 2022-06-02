@@ -98,6 +98,13 @@ impl CommandNode {
         }
     }
 
+    pub fn with_prefix(mut self, prefix: String) -> CommandNode {
+        if prefix != "" {
+            self.prefix = prefix;
+        }
+        self
+    }
+
     pub fn new_easter(value: CmdValue) -> CommandNode {
         CommandNode {
             value,
