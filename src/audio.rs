@@ -3,18 +3,21 @@ use std::fs::File;
 use std::io::BufReader;
 
 pub struct Audio {
-    device: rodio::Device,
+    _stream: rodio::OutputStream,
+    handle: rodio::OutputStreamHandle,
     sink: Option<Sink>,
 }
 
 impl Audio {
     pub fn new() -> Audio {
+        let (_stream, handle) = rodio::OutputStream::try_default().unwrap(); 
         let mut a = Audio {
-            device: rodio::default_output_device().unwrap(),
+            handle: handle,
+            _stream: _stream,
             sink: None,
         };
         // nice, code that's safer in C++
-        a.sink = Some(Sink::new(&a.device));
+        a.sink = Some(Sink::try_new(&a.handle).unwrap());
 
         return a;
     }

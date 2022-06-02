@@ -236,14 +236,14 @@ impl IRCBotClient {
             }
         };
         match command.as_str() {
-            "meta:insert" => {
+            "meta:insert" | "meta:edit" => {
                 // Let's ... try to get this to work I guess.
                 match args.split_once(' ') {
                     Some((newcmd, newresp)) => {
-                        if self.ct.contains(&newcmd.to_string()) {
+                        if self.ct.contains(&newcmd.to_string()) && command != "meta:edit" {
                             self.sender
                                 .send(TwitchFmt::privmsg(
-                                    &"Command already exists.".to_string(),
+                                    &"Command already exists. Use !edit instead.".to_string(),
                                     &self.channel,
                                 ))
                                 .await;
