@@ -191,6 +191,18 @@ impl IRCBotClient {
         let format_str = format!("[Name({}),Command({})] Result: ", user, cmd);
         let log_res = |s| println!("{}{}", format_str, s);
 
+        // Compose the command
+        // !todo -> prefix: !, cmd: todo
+        // !!todo -> prefix: !!, cmd: todo
+        // But, these need to map differently.
+        // Recombine.
+        if prefix == "folder " || prefix == "bot " {
+            prefix = "!".to_string();
+        }
+
+        cmd = format!("{}{}", &prefix.as_str()[1..], cmd);
+        prefix.truncate(1);
+
         let node = match self.ct.find(&mut cmd) {
             Some(x) => x,
             None => {
@@ -200,7 +212,6 @@ impl IRCBotClient {
         };
 
         if prefix != node.prefix
-            && !((prefix == "folder " || prefix == "bot ") && node.prefix == "!")
         {
             log_res("Skipped as prefix does not match.");
             return Command::Continue;
