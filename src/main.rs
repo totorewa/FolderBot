@@ -202,6 +202,7 @@ impl IRCBotClient {
 
         cmd = format!("{}{}", &prefix.as_str()[1..], cmd);
         prefix.truncate(1);
+        println!("cmd({}) prefix({})", cmd, prefix);
 
         let node = match self.ct.find(&mut cmd) {
             Some(x) => x,
