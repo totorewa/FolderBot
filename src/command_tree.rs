@@ -38,6 +38,9 @@ fn is_true_lol(b: &bool) -> bool {
 fn get_false_lol() -> bool {
     false
 }
+fn is_default_prefix(s: &String) -> bool {
+    *s == default_prefix()
+}
 fn default_ver() -> String {
     "0.0.0".to_string()
 }
@@ -46,6 +49,9 @@ fn default_host() -> String {
 }
 fn default_port() -> String {
     "6667".to_string()
+}
+fn default_prefix() -> String {
+    "!".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -75,6 +81,8 @@ pub struct CommandNode {
     pub hidden: bool,
     #[serde(skip_serializing_if = "String::is_empty", default = "String::new")]
     pub sound: String,
+    #[serde(skip_serializing_if = "is_default_prefix", default = "default_prefix")]
+    pub prefix: String,
 }
 
 impl CommandNode {
@@ -86,6 +94,7 @@ impl CommandNode {
             subcommands: HashMap::new(),
             hidden: false,
             sound: String::new(),
+            prefix: default_prefix(),
         }
     }
 
@@ -97,6 +106,7 @@ impl CommandNode {
             subcommands: HashMap::new(),
             hidden: true,
             sound: String::new(),
+            prefix: default_prefix(),
         }
     }
 
@@ -108,6 +118,7 @@ impl CommandNode {
             subcommands: HashMap::new(),
             hidden: true,
             sound: String::new(),
+            prefix: default_prefix(),
         }
     }
 }

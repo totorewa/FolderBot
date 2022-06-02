@@ -187,7 +187,7 @@ impl IRCBotClient {
     }
     */
 
-    async fn do_command(&mut self, user: String, mut cmd: String) -> Command {
+    async fn do_command(&mut self, user: String, mut prefix: String, mut cmd: String) -> Command {
         let format_str = format!("[Name({}),Command({})] Result: ", user, cmd);
         let log_res = |s| println!("{}{}", format_str, s);
 
@@ -198,6 +198,14 @@ impl IRCBotClient {
                 return Command::Continue; // Not a valid command
             }
         };
+
+        if prefix != node.prefix
+            && !((prefix == "folder " || prefix == "bot ") && node.prefix == "!")
+        {
+            log_res("Skipped as prefix does not match.");
+            return Command::Continue;
+        }
+
         let args = cmd;
         println!("Arguments being returned -> '{}'", args);
         if node.admin_only
@@ -415,7 +423,8 @@ impl IRCBotClient {
 
     async fn launch_read(&mut self) -> Result<String> {
         lazy_static! {
-            static ref COMMAND_RE: Regex = Regex::new(r"^(bot |!|~)\s*(.+?)\s*$").unwrap();
+            static ref COMMAND_RE: Regex =
+                Regex::new(r"^(bot |folder |[^\s\w]+)\s*(\w.*?)\s*$").unwrap();
             static ref PRIV_RE: Regex =
                 Regex::new(r":(\w*)!\w*@\w*\.tmi\.twitch\.tv PRIVMSG #\w* :\s*(.*)").unwrap();
         }
@@ -445,14 +454,14 @@ impl IRCBotClient {
                     }
 
                     // Now, we parse the command out of the message.
-                    let command = match COMMAND_RE.captures(message.as_str()) {
+                    let (prefix, command) = match COMMAND_RE.captures(message.as_str()) {
                         // there must be a better way...
-                        Some(caps) => caps.str_at(2),
+                        Some(caps) => (caps.str_at(1), caps.str_at(2)),
                         None => continue,
                     };
 
                     // Finally, we actually take the command and maybe take action.
-                    if let Command::Stop = self.do_command(name, command).await {
+                    if let Command::Stop = self.do_command(name, prefix, command).await {
                         return Ok("Received stop command.".to_string());
                     }
                 }
