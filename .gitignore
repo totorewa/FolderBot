@@ -1,0 +1,15 @@
+/target
+auth/*
+out.txt
+notes.txt
+people.json
+*.swp
+test.json
+src/stt
+log-*
+*.bk
+commands.*
+*dump.json
+players.*
+test*
+*.ignore
