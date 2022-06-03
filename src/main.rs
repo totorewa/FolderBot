@@ -210,7 +210,7 @@ impl IRCBotClient {
             }
         };
 
-        if prefix != node.prefix {
+        if prefix != node.prefix && !(prefix == "" && node.prefix == "^") {
             log_res("Skipped as prefix does not match.");
             return Command::Continue;
         }
