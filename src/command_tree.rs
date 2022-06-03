@@ -100,7 +100,12 @@ impl CommandNode {
 
     pub fn with_prefix(mut self, prefix: String) -> CommandNode {
         if prefix != "" {
-            self.prefix = prefix;
+            if prefix == "^" {
+                self.prefix = "".to_string();
+            }
+            else {
+                self.prefix = prefix;
+            }
         }
         self
     }
