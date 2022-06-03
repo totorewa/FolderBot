@@ -200,7 +200,7 @@ impl IRCBotClient {
             prefix = "!".to_string();
         }
 
-        println!("cmd({}) prefix({})", cmd, prefix);
+        // println!("cmd({}) prefix({})", cmd, prefix);
 
         let node = match self.ct.find(&mut cmd) {
             Some(x) => x,
@@ -260,7 +260,7 @@ impl IRCBotClient {
                 // Let's ... try to get this to work I guess.
                 let (newprefix, newcmd, newresp) = match COMMAND_RE.captures(args.as_str()) {
                     // there must be a better way...
-                    Some(caps) => (caps.str_at(1), caps.str_at(2), caps.str_at(2)),
+                    Some(caps) => (caps.str_at(1), caps.str_at(2), caps.str_at(3)),
                     None => {
                         self.sender.send(TwitchFmt::privmsg(&"Nice try, but you have been thwarted by the command regex! Mwuahaha.".to_string(), &self.channel,)).await;
                         return Command::Continue;
