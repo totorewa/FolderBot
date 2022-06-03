@@ -258,7 +258,7 @@ impl IRCBotClient {
         match command.as_str() {
             "meta:insert" | "meta:edit" => {
                 // Let's ... try to get this to work I guess.
-                let (newprefix, newcmd, newresp) = match COMMAND_RE.captures(args.as_str()) {
+                let (newprefix, newcmdunc, newresp) = match COMMAND_RE.captures(args.as_str()) {
                     // there must be a better way...
                     Some(caps) => (caps.str_at(1), caps.str_at(2), caps.str_at(3)),
                     None => {
@@ -266,6 +266,15 @@ impl IRCBotClient {
                         return Command::Continue;
                     }
                 };
+                let newcmd = (&newcmdunc.as_str()).to_lowercase();
+                if newcmd != newcmdunc {
+                    self.sender
+                        .send(TwitchFmt::privmsg(
+                            &"Warning: Converting to case-insensitive.".to_string(),
+                            &self.channel,
+                        ))
+                        .await;
+                }
                 if self.ct.contains(&newcmd.to_string()) && command != "meta:edit" {
                     self.sender
                         .send(TwitchFmt::privmsg(
