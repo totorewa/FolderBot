@@ -200,8 +200,6 @@ impl IRCBotClient {
             prefix = "!".to_string();
         }
 
-        cmd = format!("{}{}", &prefix.as_str()[1..], cmd);
-        prefix.truncate(1);
         println!("cmd({}) prefix({})", cmd, prefix);
 
         let node = match self.ct.find(&mut cmd) {
@@ -435,7 +433,7 @@ impl IRCBotClient {
     async fn launch_read(&mut self) -> Result<String> {
         lazy_static! {
             static ref COMMAND_RE: Regex =
-                Regex::new(r"^(bot |folder |[^\s\w]+)\s*(\w.*?)\s*$").unwrap();
+                Regex::new(r"^(bot |folder |[^\s\w]|)\s*(.*?)\s*$").unwrap();
             static ref PRIV_RE: Regex =
                 Regex::new(r":(\w*)!\w*@\w*\.tmi\.twitch\.tv PRIVMSG #\w* :\s*(.*)").unwrap();
         }
