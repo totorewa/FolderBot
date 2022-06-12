@@ -427,9 +427,14 @@ impl IRCBotClient {
             "core:get_song" => {
                 log_res("Attempting to contact Spotify Web Player...");
                 if let None = self.spotify {
-                    if let Ok(try_spotify) = Spotify::connect().await {
-                        self.spotify.insert(try_spotify);
-                    }
+                    log_res("Attempting to create Spotify abstraction...");
+                    match Spotify::connect().await {
+                        Ok(try_spotify) => self.spotify.insert(try_spotify),
+                        Err(e) => {
+                            log_res(format!("Encountered error: {:?}", e).as_str());
+                            return Command::Continue;
+                        }
+                    };
                 }
                 match self.spotify.as_ref() {
                     Some(spotify) => match spotify.status().await {
