@@ -83,6 +83,8 @@ pub struct CommandNode {
     pub sound: String,
     #[serde(skip_serializing_if = "is_default_prefix", default = "default_prefix")]
     pub prefix: String,
+    #[serde(skip_serializing_if = "is_true_lol", default = "get_true_lol")]
+    pub editable: bool,
 }
 
 impl CommandNode {
@@ -95,6 +97,7 @@ impl CommandNode {
             hidden: false,
             sound: String::new(),
             prefix: default_prefix(),
+            editable: true,
         }
     }
 
@@ -114,6 +117,7 @@ impl CommandNode {
             hidden: true,
             sound: String::new(),
             prefix: default_prefix(),
+            editable: true,
         }
     }
 
@@ -126,6 +130,7 @@ impl CommandNode {
             hidden: true,
             sound: String::new(),
             prefix: default_prefix(),
+            editable: true,
         }
     }
 }

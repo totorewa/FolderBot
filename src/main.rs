@@ -14,6 +14,8 @@ use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
 
+use spotify::Spotify;
+
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::game::Game;
@@ -103,6 +105,7 @@ struct IRCBotClient {
     game: Game,
     audio: Audio,
     autosave: bool,
+    spotify: Option<Spotify>,
 }
 
 // Class that receives messages, then sends them.
@@ -152,6 +155,7 @@ impl IRCBotClient {
                 game: Game::new(),
                 audio: Audio::new(),
                 autosave: false,
+                spotify: None,
             },
             IRCBotMessageSender {
                 writer: stream,
@@ -275,6 +279,19 @@ impl IRCBotClient {
                         ))
                         .await;
                 }
+
+                if let Some(x) = self.ct.find(&mut newcmd.to_string()) {
+                    if !x.editable {
+                        self.sender
+                            .send(TwitchFmt::privmsg(
+                                &"Command is not editable.".to_string(),
+                                &self.channel,
+                            ))
+                            .await;
+                        return Command::Continue;
+                    }
+                };
+
                 if self.ct.contains(&newcmd.to_string()) && command != "meta:edit" {
                     self.sender
                         .send(TwitchFmt::privmsg(
@@ -406,6 +423,45 @@ impl IRCBotClient {
             "core:play_audio" => {
                 log_res("Tested audio.");
                 self.audio.play();
+            }
+            "core:get_song" => {
+                log_res("Attempting to contact Spotify Web Player...");
+                if let None = self.spotify {
+                    if let Ok(try_spotify) = Spotify::connect().await {
+                        self.spotify.insert(try_spotify);
+                    }
+                }
+                match self.spotify.as_ref() {
+                    Some(spotify) => match spotify.status().await {
+                        Ok(status) => {
+                            if !status.is_online() {
+                                self.sender
+                                    .send(TwitchFmt::privmsg(
+                                        &"Spotify is not online.".to_string(),
+                                        &self.channel,
+                                    ))
+                                    .await;
+                                return Command::Continue;
+                            }
+                            self.sender
+                                .send(TwitchFmt::privmsg(
+                                    &format!("{:#}", status.track()),
+                                    &self.channel,
+                                ))
+                                .await;
+                            return Command::Continue;
+                        }
+                        Err(_) => {
+                            self.sender
+                                .send(TwitchFmt::privmsg(
+                                    &"Failed to get song.".to_string(),
+                                    &self.channel,
+                                ))
+                                .await;
+                        }
+                    },
+                    None => {}
+                }
             }
             "internal:cancel" => {
                 self.audio.stop();
