@@ -14,11 +14,27 @@ use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
 
-use spotify::Spotify;
+use reqwest::{header, Client};
 
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::game::Game;
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Artist {
+    name: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct Track {
+    name: String,
+    artists: Vec<Artist>,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct APIResponse {
+    item: Track,
+}
 
 // Temporary until I find the correct way to do this.
 trait CaptureExt {
@@ -105,7 +121,7 @@ struct IRCBotClient {
     game: Game,
     audio: Audio,
     autosave: bool,
-    spotify: Option<Spotify>,
+    client: Option<Client>,
 }
 
 // Class that receives messages, then sends them.
@@ -155,7 +171,7 @@ impl IRCBotClient {
                 game: Game::new(),
                 audio: Audio::new(),
                 autosave: false,
-                spotify: None,
+                client: None,
             },
             IRCBotMessageSender {
                 writer: stream,
@@ -426,40 +442,73 @@ impl IRCBotClient {
             }
             "core:get_song" => {
                 log_res("Attempting to contact Spotify Web Player...");
-                if let None = self.spotify {
-                    log_res("Attempting to create Spotify abstraction...");
-                    match Spotify::connect().await {
-                        Ok(try_spotify) => self.spotify.insert(try_spotify),
+                if let None = self.client {
+                    log_res("Attempting to create Spotify connection...");
+                    let mut headers = header::HeaderMap::new();
+                    let auth = match std::fs::read_to_string("auth/spotify.txt") {
+                        Ok(s) => s.trim().to_string(),
+                        Err(e) => {
+                            log_res("Could not open: auth/spotify.txt");
+                            return Command::Continue;
+                        }
+                    };
+
+                    // https://developer.spotify.com/console/get-users-currently-playing-track/
+                    headers.insert(
+                        "Authorization",
+                        header::HeaderValue::try_from(format!("Bearer {}", auth)).unwrap(),
+                    );
+                    headers.insert(
+                        "Accept",
+                        header::HeaderValue::from_static("application/json"),
+                    );
+                    headers.insert(
+                        "Content-Type",
+                        header::HeaderValue::from_static("application/json"),
+                    );
+                    match Client::builder().default_headers(headers).build() {
+                        Ok(try_client) => self.client.insert(try_client),
                         Err(e) => {
                             log_res(format!("Encountered error: {:?}", e).as_str());
                             return Command::Continue;
                         }
                     };
                 }
-                match self.spotify.as_ref() {
-                    Some(spotify) => match spotify.status().await {
-                        Ok(status) => {
-                            if !status.is_online() {
+                match self.client.as_ref() {
+                    Some(spotify) => match spotify
+                        .get("https://api.spotify.com/v1/me/player/currently-playing")
+                        .send()
+                        .await
+                    {
+                        Ok(response) => {
+                            if response.status().is_success() {
+                                match response.json::<APIResponse>().await {
+                                    Ok(parsed) => {
+                                        self.sender
+                                            .send(TwitchFmt::privmsg(
+                                                &format!("{}", parsed.item.name),
+                                                &self.channel,
+                                            ))
+                                            .await;
+                                        return Command::Continue;
+                                    }
+                                    Err(_) => {
+                                        return Command::Continue;
+                                    }
+                                }
+                            } else {
                                 self.sender
                                     .send(TwitchFmt::privmsg(
-                                        &"Spotify is not online.".to_string(),
+                                        &"Failed to get song (bad request).".to_string(),
                                         &self.channel,
                                     ))
                                     .await;
-                                return Command::Continue;
                             }
-                            self.sender
-                                .send(TwitchFmt::privmsg(
-                                    &format!("{:#}", status.track()),
-                                    &self.channel,
-                                ))
-                                .await;
-                            return Command::Continue;
                         }
                         Err(_) => {
                             self.sender
                                 .send(TwitchFmt::privmsg(
-                                    &"Failed to get song.".to_string(),
+                                    &"Failed to get song (bad request).".to_string(),
                                     &self.channel,
                                 ))
                                 .await;
