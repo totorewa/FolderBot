@@ -484,9 +484,13 @@ impl IRCBotClient {
                             if response.status().is_success() {
                                 match response.json::<APIResponse>().await {
                                     Ok(parsed) => {
+                                        let artist = match parsed.item.artists.len() {
+                                            0 => "".to_string(),
+                                            _ => format!(" - {}", parsed.item.artists[0].name),
+                                        };
                                         self.sender
                                             .send(TwitchFmt::privmsg(
-                                                &format!("{}", parsed.item.name),
+                                                &format!("{}{}", parsed.item.name, artist),
                                                 &self.channel,
                                             ))
                                             .await;
