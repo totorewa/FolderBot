@@ -328,8 +328,13 @@ impl IRCBotClient {
                             .await;
                         return Command::Continue;
                     }
-                    self.ct.set_value(&keycmd, CmdValue::StringResponse(newresp.to_string()));
-                    self.ct.set_prefix(&keycmd, newprefix);
+                    self.ct
+                        .set_value(&keycmd, CmdValue::StringResponse(newresp.to_string()));
+                    self.ct.set_prefix(&keycmd, newprefix.clone());
+                    println!(
+                        "New prefix: {}, new value: {} for keycmd: {}",
+                        newprefix, newresp, keycmd
+                    );
                 } else {
                     self.ct.insert(
                         newcmd.to_string(),
