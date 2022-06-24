@@ -31,6 +31,9 @@ impl Audio {
     }
 
     pub fn play_file(&self, filename: &String) {
+        if self.sink.as_ref().unwrap().len() > 2 {
+            return;
+        }
         let file = match File::open(filename) {
             Ok(x) => x,
             Err(_) => return // this should print
