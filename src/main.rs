@@ -308,13 +308,28 @@ impl IRCBotClient {
                     }
                 };
 
-                if self.ct.contains(&newcmd.to_string()) && command != "meta:edit" {
-                    self.sender
-                        .send(TwitchFmt::privmsg(
-                            &"Command already exists. Use !edit instead.".to_string(),
-                            &self.channel,
-                        ))
-                        .await;
+                let keycmd = newcmd.to_string();
+                if self.ct.contains(&keycmd) {
+                    if command != "meta:edit" {
+                        self.sender
+                            .send(TwitchFmt::privmsg(
+                                &"Command already exists. Use !edit instead.".to_string(),
+                                &self.channel,
+                            ))
+                            .await;
+                        return Command::Continue;
+                    }
+                    if let CmdValue::Generic(_) = self.ct.get_always(&keycmd).value {
+                        self.sender
+                            .send(TwitchFmt::privmsg(
+                                &"You cannot edit Generic commands.".to_string(),
+                                &self.channel,
+                            ))
+                            .await;
+                        return Command::Continue;
+                    }
+                    self.ct.set_value(&keycmd, CmdValue::StringResponse(newresp.to_string()));
+                    self.ct.set_prefix(&keycmd, newprefix);
                 } else {
                     self.ct.insert(
                         newcmd.to_string(),
@@ -438,7 +453,8 @@ impl IRCBotClient {
             }
             "feature:rsg" => {
                 log_res("Printing what RSG does.");
-                if let Ok(get_resp) = reqwest::get("http://shnenanigans.pythonanywhere.com/").await {
+                if let Ok(get_resp) = reqwest::get("http://shnenanigans.pythonanywhere.com/").await
+                {
                     if let Ok(get_text) = get_resp.text().await {
                         self.sender
                             .send(TwitchFmt::privmsg(&get_text, &self.channel))

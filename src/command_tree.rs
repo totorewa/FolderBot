@@ -221,8 +221,24 @@ impl CommandTree {
         self.commands.insert(key, cmd);
     }
 
+    pub fn set_value(&mut self, key: &String, value: CmdValue) {
+        self.get_always(key).value = value;
+    }
+
+    pub fn set_prefix(&mut self, key: &String, prefix: String) {
+        self.get_always(key).prefix = prefix;
+    }
+
     pub fn contains(&self, key: &String) -> bool {
         self.commands.contains_key(key)
+    }
+
+    pub fn get_always(&mut self, key: &String) -> &mut CommandNode {
+        self.commands.get_mut(key).unwrap()
+    }
+
+    pub fn find_ref_mut(&mut self, key: &String) -> Option<&mut CommandNode>  {
+        self.commands.get_mut(key)
     }
 
     pub fn find_recurse(&self, key: &String, mut prev: HashSet<String>) -> Option<&CommandNode> {
