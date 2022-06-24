@@ -278,7 +278,7 @@ impl IRCBotClient {
         match command.as_str() {
             "meta:insert" | "meta:edit" => {
                 // Let's ... try to get this to work I guess.
-                let (newprefix, newcmdunc, newresp) = match COMMAND_RE.captures(args.as_str()) {
+                let (mut newprefix, newcmdunc, newresp) = match COMMAND_RE.captures(args.as_str()) {
                     // there must be a better way...
                     Some(caps) => (caps.str_at(1), caps.str_at(2), caps.str_at(3)),
                     None => {
@@ -286,6 +286,9 @@ impl IRCBotClient {
                         return Command::Continue;
                     }
                 };
+                if newprefix == "" {
+                    newprefix = "!".to_string();
+                }
                 let newcmd = (&newcmdunc.as_str()).to_lowercase();
                 if newcmd != newcmdunc {
                     self.sender
@@ -335,6 +338,7 @@ impl IRCBotClient {
                         "New prefix: {}, new value: {} for keycmd: {}",
                         newprefix, newresp, keycmd
                     );
+                    self.ct.dump_file(Path::new("commands.json"));
                 } else {
                     self.ct.insert(
                         newcmd.to_string(),
