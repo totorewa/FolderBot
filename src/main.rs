@@ -436,6 +436,16 @@ impl IRCBotClient {
                 log_res("Turned on autosave.");
                 self.autosave = true;
             }
+            "feature:rsg" => {
+                log_res("Printing what RSG does.");
+                if let Ok(get_resp) = reqwest::get("http://shnenanigans.pythonanywhere.com/").await {
+                    if let Ok(get_text) = get_resp.text().await {
+                        self.sender
+                            .send(TwitchFmt::privmsg(&get_text, &self.channel))
+                            .await;
+                    }
+                }
+            }
             "core:play_audio" => {
                 log_res("Tested audio.");
                 self.audio.play();
