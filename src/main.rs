@@ -522,7 +522,7 @@ impl IRCBotClient {
                 {
                     if let Ok(j) = r.json::<MojangAPIResponse>().await {
                         if let Ok(r) =
-                            reqwest::get(format!("https://mcsrranked.com/api/users/{}", j.name))
+                            reqwest::get(format!("https://mcsrranked.com/api/users/{}", j.id))
                                 .await
                         {
                             let _ = match r.json::<MCSRAPIResponse>().await {
