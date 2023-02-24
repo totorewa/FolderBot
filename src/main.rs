@@ -63,7 +63,7 @@ struct MCSRData {
     prev_elo_rate: i64,
     best_elo_rate: i64,
     best_record_time: i64,
-    records: Vec<MCSRRecord>,
+    records: std::HashMap<String, MCSRRecord>,
     achievements: Vec<i64>,
     linked_patreon: bool,
 }
