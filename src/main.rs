@@ -529,7 +529,7 @@ impl IRCBotClient {
                                 let _ = self
                                     .sender
                                     .send(TwitchFmt::privmsg(
-                                        format!("Elo for {}: {}", un, j.data.elo_rate),
+                                        &format!("Elo for {}: {}", un, j.data.elo_rate),
                                         &self.channel,
                                     ))
                                     .await;
@@ -537,7 +537,7 @@ impl IRCBotClient {
                                 let _ = self
                                     .sender
                                     .send(TwitchFmt::privmsg(
-                                        format!("Bad response for {}.", un),
+                                        &format!("Bad response for {}.", un),
                                         &self.channel,
                                     ))
                                     .await;
@@ -546,7 +546,7 @@ impl IRCBotClient {
                             let _ = self
                                 .sender
                                 .send(TwitchFmt::privmsg(
-                                    format!("Failed to query MCSR API."),
+                                    &format!("Failed to query MCSR API."),
                                     &self.channel,
                                 ))
                                 .await;
@@ -555,7 +555,7 @@ impl IRCBotClient {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
-                                format!("Bad username ({}).", un),
+                                &format!("Bad username ({}).", un),
                                 &self.channel,
                             ))
                             .await;
