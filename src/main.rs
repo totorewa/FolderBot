@@ -14,6 +14,8 @@ use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
 use std::collections::HashMap;
+use serde_with::serde_as;
+use serde_with::DefaultOnError;
 
 use reqwest::{header, Client};
 
@@ -43,15 +45,13 @@ struct MojangAPIResponse {
     id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-enum MCSRNumber {
-    S(String),
-    N(i64),
-}
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 struct MCSRRecord {
-    win: MCSRNumber,
-    lose: MCSRNumber,
+    #[serde_as(deserialize_as = "DefaultOnError")]
+    win: String,
+    #[serde_as(deserialize_as = "DefaultOnError")]
+    lose: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct MCSRData {
