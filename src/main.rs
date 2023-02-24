@@ -525,23 +525,25 @@ impl IRCBotClient {
                             reqwest::get(format!("https://mcsrranked.com/api/users/{}", j.name))
                                 .await
                         {
-                            if let Ok(j) = r.json::<MCSRAPIResponse>().await {
-                                let _ = self
-                                    .sender
-                                    .send(TwitchFmt::privmsg(
-                                        &format!("Elo for {}: {}", un, j.data.elo_rate),
-                                        &self.channel,
-                                    ))
-                                    .await;
-                            } else {
-                                let _ = self
-                                    .sender
-                                    .send(TwitchFmt::privmsg(
-                                        &format!("Bad response for {}.", un),
-                                        &self.channel,
-                                    ))
-                                    .await;
-                            }
+                            let _ = match r.json::<MCSRAPIResponse>().await {
+                                Ok(j) => {
+                                    self.sender
+                                        .send(TwitchFmt::privmsg(
+                                            &format!("Elo for {}: {}", un, j.data.elo_rate),
+                                            &self.channel,
+                                        ))
+                                        .await
+                                }
+                                Err(e) => {
+                                    println!("{}", e);
+                                    self.sender
+                                        .send(TwitchFmt::privmsg(
+                                            &format!("Bad MCSR API response for {}.", un),
+                                            &self.channel,
+                                        ))
+                                        .await
+                                }
+                            };
                         } else {
                             let _ = self
                                 .sender
