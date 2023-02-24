@@ -44,9 +44,14 @@ struct MojangAPIResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+enum MCSRNumber {
+    S(String),
+    N(i64),
+}
+#[derive(Serialize, Deserialize, Debug)]
 struct MCSRRecord {
-    win: String,
-    lose: String,
+    win: MCSRNumber,
+    lose: MCSRNumber,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct MCSRData {
