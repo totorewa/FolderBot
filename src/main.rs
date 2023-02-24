@@ -10,12 +10,12 @@ use async_trait::async_trait;
 use futures::{select, FutureExt};
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde_with::serde_as;
+use serde_with::DefaultOnError;
+use std::collections::HashMap;
 use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
-use std::collections::HashMap;
-use serde_with::serde_as;
-use serde_with::DefaultOnError;
 
 use reqwest::{header, Client};
 
@@ -53,10 +53,14 @@ struct MCSRRecord {
     #[serde_as(deserialize_as = "DefaultOnError")]
     lose: String,
 }
+// USEFUL SERDE DOCS
+// https://serde.rs/enum-representations.html
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 struct MCSRData {
     uuid: String,
     nickname: String,
+    #[serde_as(deserialize_as = "DefaultOnError")]
     badge: i64,
     elo_rate: i64,
     elo_rank: i64,
@@ -77,6 +81,15 @@ struct MCSRData {
 struct MCSRAPIResponse {
     status: String,
     data: MCSRData,
+}
+
+impl MCSRData {
+    fn win_loss(&self) -> String {
+        match self.records.get("2") {
+            Some(MR) => format!("[{} - {}]", MR.win, MR.lose),
+            None => "[No data]".to_string(),
+        }
+    }
 }
 
 // Temporary until I find the correct way to do this.
@@ -283,7 +296,8 @@ impl IRCBotClient {
         if node.admin_only
             && ((node.super_only && user != self.ct.superuser) || !(self.ct.admins.contains(&user)))
         {
-            self.sender
+            let _ = self
+                .sender
                 .send(TwitchFmt::privmsg(
                     &"Naughty naughty, that's not for you!".to_string(),
                     &self.channel,
@@ -294,7 +308,8 @@ impl IRCBotClient {
         }
         let command = match &node.value {
             CmdValue::StringResponse(x) => {
-                self.sender
+                let _ = self
+                    .sender
                     .send(TwitchFmt::privmsg(&x.clone(), &self.channel))
                     .await;
                 log_res(format!("Returned a string response ({}).", x).as_str());
@@ -325,7 +340,7 @@ impl IRCBotClient {
                     // there must be a better way...
                     Some(caps) => (caps.str_at(1), caps.str_at(2), caps.str_at(3)),
                     None => {
-                        self.sender.send(TwitchFmt::privmsg(&"Nice try, but you have been thwarted by the command regex! Mwuahaha.".to_string(), &self.channel,)).await;
+                        let _ = self.sender.send(TwitchFmt::privmsg(&"Nice try, but you have been thwarted by the command regex! Mwuahaha.".to_string(), &self.channel,)).await;
                         return Command::Continue;
                     }
                 };
@@ -334,7 +349,8 @@ impl IRCBotClient {
                 }
                 let newcmd = (&newcmdunc.as_str()).to_lowercase();
                 if newcmd != newcmdunc {
-                    self.sender
+                    let _ = self
+                        .sender
                         .send(TwitchFmt::privmsg(
                             &"Warning: Converting to case-insensitive.".to_string(),
                             &self.channel,
@@ -344,7 +360,8 @@ impl IRCBotClient {
 
                 if let Some(x) = self.ct.find(&mut newcmd.to_string()) {
                     if !x.editable {
-                        self.sender
+                        let _ = self
+                            .sender
                             .send(TwitchFmt::privmsg(
                                 &"Command is not editable.".to_string(),
                                 &self.channel,
@@ -357,7 +374,8 @@ impl IRCBotClient {
                 let keycmd = newcmd.to_string();
                 if self.ct.contains(&keycmd) {
                     if command != "meta:edit" {
-                        self.sender
+                        let _ = self
+                            .sender
                             .send(TwitchFmt::privmsg(
                                 &"Command already exists. Use !edit instead.".to_string(),
                                 &self.channel,
@@ -366,7 +384,8 @@ impl IRCBotClient {
                         return Command::Continue;
                     }
                     if let CmdValue::Generic(_) = self.ct.get_always(&keycmd).value {
-                        self.sender
+                        let _ = self
+                            .sender
                             .send(TwitchFmt::privmsg(
                                 &"You cannot edit Generic commands.".to_string(),
                                 &self.channel,
@@ -422,13 +441,14 @@ impl IRCBotClient {
             }
             "meta:say" => {
                 log_res("Sent a privmsg.");
-                self.sender
+                let _ = self
+                    .sender
                     .send(TwitchFmt::privmsg(&args, &self.channel))
                     .await;
             }
             "meta:say_raw" => {
                 log_res("Send a raw message.");
-                self.sender.send(TwitchFmt::text(&args)).await;
+                let _ = self.sender.send(TwitchFmt::text(&args)).await;
             }
             "meta:reload_commands" => {
                 log_res("Reloaded commands from file.");
@@ -446,7 +466,8 @@ impl IRCBotClient {
                 log_res("Bet that it works!");
                 match self.game.bet_for(&user, &args) {
                     Err(e) => {
-                        self.sender
+                        let _ = self
+                            .sender
                             .send(TwitchFmt::privmsg(&e, &self.channel))
                             .await;
                     }
@@ -457,7 +478,8 @@ impl IRCBotClient {
                 log_res("Bet that it fails!");
                 match self.game.bet_against(&user, &args) {
                     Err(e) => {
-                        self.sender
+                        let _ = self
+                            .sender
                             .send(TwitchFmt::privmsg(&e, &self.channel))
                             .await;
                     }
@@ -466,7 +488,8 @@ impl IRCBotClient {
             }
             "game:failed" => {
                 log_res("Noted that it failed.");
-                self.sender
+                let _ = self
+                    .sender
                     .send(TwitchFmt::privmsg(&self.game.failed(), &self.channel))
                     .await;
                 if self.autosave {
@@ -476,7 +499,8 @@ impl IRCBotClient {
             }
             "game:worked" => {
                 log_res("Noted that it succeeded!");
-                self.sender
+                let _ = self
+                    .sender
                     .send(TwitchFmt::privmsg(&self.game.worked(), &self.channel))
                     .await;
                 if self.autosave {
@@ -487,7 +511,8 @@ impl IRCBotClient {
             "game:status" => {
                 log_res("Returned a player's status.");
                 let query = if args == "" { &user } else { &args };
-                self.sender
+                let _ = self
+                    .sender
                     .send(TwitchFmt::privmsg(&self.game.status(query), &self.channel))
                     .await;
             }
@@ -508,7 +533,8 @@ impl IRCBotClient {
                 if let Ok(get_resp) = reqwest::get("http://shnenanigans.pythonanywhere.com/").await
                 {
                     if let Ok(get_text) = get_resp.text().await {
-                        self.sender
+                        let _ = self
+                            .sender
                             .send(TwitchFmt::privmsg(&get_text, &self.channel))
                             .await;
                     }
@@ -528,14 +554,20 @@ impl IRCBotClient {
                 {
                     if let Ok(j) = r.json::<MojangAPIResponse>().await {
                         if let Ok(r) =
-                            reqwest::get(format!("https://mcsrranked.com/api/users/{}", j.id))
-                                .await
+                            reqwest::get(format!("https://mcsrranked.com/api/users/{}", j.id)).await
                         {
                             let _ = match r.json::<MCSRAPIResponse>().await {
                                 Ok(j) => {
                                     self.sender
                                         .send(TwitchFmt::privmsg(
-                                            &format!("Elo for {}: {}", un, j.data.elo_rate),
+                                            &format!(
+                                                "Elo for {}: {} (Rank #{}) Season games: {} {}",
+                                                un,
+                                                j.data.elo_rate,
+                                                j.data.elo_rank,
+                                                j.data.season_played,
+                                                j.data.win_loss()
+                                            ),
                                             &self.channel,
                                         ))
                                         .await
