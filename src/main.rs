@@ -36,6 +36,43 @@ struct APIResponse {
     item: Track,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct MojangAPIResponse {
+    name: String,
+    id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct MCSRRecord {
+    win: String,
+    lose: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct MCSRData {
+    uuid: String,
+    nickname: String,
+    badge: i64,
+    elo_rate: i64,
+    elo_rank: i64,
+    created_time: i64,
+    latest_time: i64,
+    total_played: i64,
+    season_played: i64,
+    highest_winstreak: i64,
+    current_winstreak: i64,
+    prev_elo_rate: i64,
+    best_elo_rate: i64,
+    best_record_time: i64,
+    records: Vec<MCSRRecord>,
+    achievements: Vec<i64>,
+    linked_patreon: bool,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct MCSRAPIResponse {
+    status: String,
+    data: MCSRData,
+}
+
 // Temporary until I find the correct way to do this.
 trait CaptureExt {
     fn str_at(&self, i: usize) -> String;
@@ -471,6 +508,68 @@ impl IRCBotClient {
                     }
                 }
             }
+            "feature:elo" => {
+                log_res("Doing elo things");
+                let un: String = match args.len() {
+                    0..=2 => "DesktopFolder".into(),
+                    _ => args.clone(),
+                };
+                if let Ok(r) = reqwest::get(format!(
+                    "https://api.mojang.com/users/profiles/minecraft/{}",
+                    un
+                ))
+                .await
+                {
+                    if let Ok(j) = r.json::<MojangAPIResponse>().await {
+                        if let Ok(r) =
+                            reqwest::get(format!("https://mcsrranked.com/api/users/{}", j.name))
+                                .await
+                        {
+                            if let Ok(j) = r.json::<MCSRAPIResponse>().await {
+                                let _ = self
+                                    .sender
+                                    .send(TwitchFmt::privmsg(
+                                        format!("Elo for {}: {}", un, j.data.elo_rate),
+                                        &self.channel,
+                                    ))
+                                    .await;
+                            } else {
+                                let _ = self
+                                    .sender
+                                    .send(TwitchFmt::privmsg(
+                                        format!("Bad response for {}.", un),
+                                        &self.channel,
+                                    ))
+                                    .await;
+                            }
+                        } else {
+                            let _ = self
+                                .sender
+                                .send(TwitchFmt::privmsg(
+                                    format!("Failed to query MCSR API."),
+                                    &self.channel,
+                                ))
+                                .await;
+                        }
+                    } else {
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                format!("Bad username ({}).", un),
+                                &self.channel,
+                            ))
+                            .await;
+                    }
+                } else {
+                    let _ = self
+                        .sender
+                        .send(TwitchFmt::privmsg(
+                            &"Failed to query Mojang API.".to_string(),
+                            &self.channel,
+                        ))
+                        .await;
+                }
+            }
             "core:play_audio" => {
                 log_res("Tested audio.");
                 self.audio.play();
@@ -523,7 +622,8 @@ impl IRCBotClient {
                                             0 => "".to_string(),
                                             _ => format!(" - {}", parsed.item.artists[0].name),
                                         };
-                                        self.sender
+                                        let _ = self
+                                            .sender
                                             .send(TwitchFmt::privmsg(
                                                 &format!("{}{}", parsed.item.name, artist),
                                                 &self.channel,
@@ -536,7 +636,8 @@ impl IRCBotClient {
                                     }
                                 }
                             } else {
-                                self.sender
+                                let _ = self
+                                    .sender
                                     .send(TwitchFmt::privmsg(
                                         &"Failed to get song (bad request).".to_string(),
                                         &self.channel,
@@ -545,7 +646,8 @@ impl IRCBotClient {
                             }
                         }
                         Err(_) => {
-                            self.sender
+                            let _ = self
+                                .sender
                                 .send(TwitchFmt::privmsg(
                                     &"Failed to get song (bad request).".to_string(),
                                     &self.channel,
