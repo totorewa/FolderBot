@@ -86,7 +86,12 @@ struct MCSRAPIResponse {
 impl MCSRData {
     fn win_loss(&self) -> String {
         match self.records.get("2") {
-            Some(MR) => format!("[{} - {}]", MR.win, MR.lose),
+            Some(MR) => match (MR.win.parse::<f64>(), MR.lose.parse::<f64>()) {
+                (Ok(w), Ok(l)) => {
+                    format!("[{} - {} ({:.2}%)]", MR.win, MR.lose, w * 100.0 / (l + w))
+                }
+                _ => format!("[{} - {}]", MR.win, MR.lose),
+            },
             None => "[No data]".to_string(),
         }
     }
