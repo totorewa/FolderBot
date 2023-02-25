@@ -52,6 +52,8 @@ struct MCSRRecord {
     win: String,
     #[serde_as(deserialize_as = "DefaultOnError")]
     lose: String,
+    #[serde_as(deserialize_as = "DefaultOnError")]
+    draw: String,
 }
 // USEFUL SERDE DOCS
 // https://serde.rs/enum-representations.html
