@@ -561,17 +561,10 @@ impl IRCBotClient {
                     0..=2 => "DesktopFolder".into(),
                     _ => args.clone(),
                 };
-                if let Ok(r) = reqwest::get(format!(
-                    "https://api.mojang.com/users/profiles/minecraft/{}",
-                    un
-                ))
-                .await
+                if let Ok(r) =
+                    reqwest::get(format!("https://mcsrranked.com/api/users/{}", un)).await
                 {
-                    if let Ok(j) = r.json::<MojangAPIResponse>().await {
-                        if let Ok(r) =
-                            reqwest::get(format!("https://mcsrranked.com/api/users/{}", j.id)).await
-                        {
-                            let _ = match r.json::<MCSRAPIResponse>().await {
+                    let _ = match r.json::<MCSRAPIResponse>().await {
                                 Ok(j) => {
                                     self.sender
                                         .send(TwitchFmt::privmsg(
@@ -597,29 +590,11 @@ impl IRCBotClient {
                                         .await
                                 }
                             };
-                        } else {
-                            let _ = self
-                                .sender
-                                .send(TwitchFmt::privmsg(
-                                    &format!("Failed to query MCSR API."),
-                                    &self.channel,
-                                ))
-                                .await;
-                        }
-                    } else {
-                        let _ = self
-                            .sender
-                            .send(TwitchFmt::privmsg(
-                                &format!("Bad username ({}).", un),
-                                &self.channel,
-                            ))
-                            .await;
-                    }
                 } else {
                     let _ = self
                         .sender
                         .send(TwitchFmt::privmsg(
-                            &"Failed to query Mojang API.".to_string(),
+                            &format!("Failed to query MCSR API."),
                             &self.channel,
                         ))
                         .await;
