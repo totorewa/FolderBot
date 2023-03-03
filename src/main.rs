@@ -576,12 +576,12 @@ impl IRCBotClient {
                                     self.sender
                                         .send(TwitchFmt::privmsg(
                                             &format!(
-                                                "Elo for {}: {} (Rank #{}) Season games: {} {}",
+                                                "Elo for {0}: {1} (Rank #{2}) Season games: {3} {4} (https://disrespec.tech/elo/?username={0})",
                                                 un,
                                                 j.data.elo_rate,
                                                 j.data.elo_rank,
                                                 j.data.season_played,
-                                                j.data.win_loss()
+                                                j.data.win_loss(),
                                             ),
                                             &self.channel,
                                         ))
