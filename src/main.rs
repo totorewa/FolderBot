@@ -76,7 +76,6 @@ struct MCSRData {
     best_elo_rate: i64,
     best_record_time: i64,
     records: HashMap<String, MCSRRecord>,
-    achievements: Vec<i64>,
     linked_patreon: bool,
 }
 #[derive(Serialize, Deserialize, Debug)]
