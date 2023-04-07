@@ -62,8 +62,8 @@ struct MCSRRecord {
 struct MCSRData {
     uuid: String,
     nickname: String,
-    #[serde_as(deserialize_as = "DefaultOnError")]
-    badge: i64,
+    //#[serde_as(deserialize_as = "DefaultOnError")]
+    //badge: i64,
     elo_rate: i64,
     elo_rank: i64,
     created_time: i64,
@@ -76,7 +76,6 @@ struct MCSRData {
     best_elo_rate: i64,
     best_record_time: i64,
     records: HashMap<String, MCSRRecord>,
-    linked_patreon: bool,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct MCSRAPIResponse {
