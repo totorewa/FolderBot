@@ -18,3 +18,4 @@ rodio = "0.15"
 async-std = { version = "1.6.2", features = ["tokio1"] }
 reqwest = { version = "0.11", features = ["json"] }
 serde_with = { version = "2.2.0" }
+rand = "0.8.5"
