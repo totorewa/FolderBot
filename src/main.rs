@@ -23,6 +23,7 @@ use reqwest::{header, Client};
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::game::Game;
+use folderbot::responses::rare_trident;
 
 use serde::{Deserialize, Serialize};
 
@@ -560,6 +561,8 @@ impl IRCBotClient {
                 let inner = self.rng.gen_range(0..=250);
                 let res = self.rng.gen_range(0..=inner);
                 let restr = res.to_string();
+                let selection = self.rng.gen_range(0..=100);
+                if selection < 90 {
                 const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
                 const BAD_STRS: &'static [&'static str] = &["Hehe. A 1. So close, and yet so far, eh {}?", "{} rolled a 1. Everyone clap for {}. They deserve a little light in their life.", "A 1. Nice work, {}. I'm sure you did great in school.", "1. Do you know how likely that is, {}? You should ask PacManMVC. He has a spreadsheet, just to show how bad you are."];
                 const OK_STRS: &'static [&'static str] = &["{N}. Cool. That's not that bad.", "{N}! Wow, that's great! Last time, I rolled a 0, and everyone made fun of me :sob: I'm so jealous of you :sob:", "{N}... not terrible, I suppose.", "{N}. :/ <- That's all I have to say."];
@@ -585,6 +588,11 @@ impl IRCBotClient {
                 else {
                     assert!(res == 250);
                     let _ = self.sender.send(TwitchFmt::privmsg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &user), &self.channel)).await;
+                }
+                }
+                else {
+                // ok, let's do this a bit better.
+                let _ = self.sender.send(TwitchFmt::privmsg(&rare_trident(res, self.rng.gen_range(0..=4096), &user), &self.channel)).await;
                 }
             }
             "feature:elo" => {
@@ -835,5 +843,6 @@ async fn async_main() {
 }
 
 fn main() {
+    //println!("{}", rare_trident(245, 1, &String::from("hi")));
     task::block_on(async_main())
 }
