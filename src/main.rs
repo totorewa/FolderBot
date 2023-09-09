@@ -562,11 +562,11 @@ impl IRCBotClient {
                 let res = self.rng.gen_range(0..=inner);
                 let restr = res.to_string();
                 let selection = self.rng.gen_range(0..=100);
-                if selection < 90 {
+                if selection < 81 {
                 const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
                 const BAD_STRS: &'static [&'static str] = &["Hehe. A 1. So close, and yet so far, eh {}?", "{} rolled a 1. Everyone clap for {}. They deserve a little light in their life.", "A 1. Nice work, {}. I'm sure you did great in school.", "1. Do you know how likely that is, {}? You should ask PacManMVC. He has a spreadsheet, just to show how bad you are."];
-                const OK_STRS: &'static [&'static str] = &["{N}. Cool. That's not that bad.", "{N}! Wow, that's great! Last time, I rolled a 0, and everyone made fun of me :sob: I'm so jealous of you :sob:", "{N}... not terrible, I suppose.", "{N}. :/ <- That's all I have to say."];
-                const GOOD_STRS: &'static [&'static str] = &["{N}. Wow! I'm really impressed :)", "{N}! Cool, cool. Cool. Coooool.", "{N}... Hm. It's so good, and yet, really not that good.", "{N}. Here's a cat fact: Did you know they can eat up to 350 fish in a single day?!"];
+                const OK_STRS: &'static [&'static str] = &["{N}. Cool. That's not that bad.", "{N}! Wow, that's great! Last time, I rolled a 0, and everyone made fun of me :sob: I'm so jealous of you :sob:", "{N}... not terrible, I suppose.", "{N}. :/ <- That's all I have to say.", "{N}. Yeppers. Yep yep yep. Real good roll you got there, buddy.", "{N}! Whoa. A whole {N} more durability than 0, and you still won't get thunder, LOL!"];
+                const GOOD_STRS: &'static [&'static str] = &["{N}. Wow! I'm really impressed :)", "{N}! Cool, cool. Cool. Coooool.", "{N}... Hm. It's so good, and yet, really not that good.", "{N}. Here's a cat fact: Did you know they can eat up to 350 fish in a single day?!", "{N}. I lied about the cat fact, just FYI. I don't know anything about cats. He doesn't let me use the internet :(", "{N}. I want a cat. I'd treat it well and not abandon it in a random village."];
                 const GREAT_STRS: &'static [&'static str] = &["{N}. Great work!!! That's going in your diary, I'm sure.", "{N}! Whoaaaaa. I'm in awe.", "{N}... Pretty great! You know what would be better? Getting outside ;) ;) ;)", "{N}. Oh boy! We got a high roller here!"];
                 if res == 0 {
                     let _ = self.sender.send(TwitchFmt::privmsg(&LOSER_STRS[self.rng.gen_range(0..LOSER_STRS.len())].replace("{}", &user), &self.channel)).await;
