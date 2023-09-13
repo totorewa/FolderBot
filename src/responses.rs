@@ -1,3 +1,6 @@
+use std::collections::{HashMap, HashSet};
+use std::sync::atomic::AtomicBool;
+
 pub fn rare_trident(roll: i32, rng: u32, user: &String) -> String {
     // roll -> 0-256
     // rng -> 0-4096 atm, fix later idk who cares
@@ -25,6 +28,30 @@ pub fn rare_trident(roll: i32, rng: u32, user: &String) -> String {
         // 250
         &["You rolled a 250!! Just kidding. No, I wasn't kidding, this was a reverse bait. This is actually the rare 250 response. Trust me.", "I hereby certify that {A} has rolled a natural 250."],
     ];
+    lazy_static::lazy_static! {
+        static ref RARE_SPECIFICS: HashMap<i32, &'static str> = HashMap::from([
+            (0, "A 0! That foretells good luck, or so I've heard."),
+            (1, "1. The worst part about this roll is - you can't even have solace that it won't get worse!"),
+            (2, "Two."),
+            (8, "1000. In binary."),
+            (9, "3^2."),
+            (18, "18! NO that's NOT a factorial Oskar! I'm just EXCITED. Do you understand that? CAN you understand?"),
+            (42, "42. I'd make a reference here, but as an unthinking bot, I have no such creativity."),
+            (45, "0b101101. Have fun converting that, human. Binary->Decimal conversions don't seem so FUN anymore, now do they? Huh? HUH?!"),
+            (69, "69? N-actually, I'm not going to say anything."),
+            (79, "79... I just... don't have it in me anymore to respond to you. :("),
+            (185, "185! Fun fact: Did you know this bot is written in Rust? Pro tip: Writing something in Rust does NOT make it good."),
+            (244, "Congratulations zayd on your daily 244!"),
+        ]);
+
+        static ref RARE_SKIPS: HashSet<i32> = HashSet::from([17, 91, 134]);
+    }
+    static SKIP_TRIGGER: AtomicBool = AtomicBool::new(false);
+    if SKIP_TRIGGER.load(std::sync::atomic::Ordering::Relaxed) {
+        SKIP_TRIGGER.store(false, std::sync::atomic::Ordering::Relaxed);
+        return format!("{}. Also - no, I didn't miss that last rolltrident. I just couldn't be bothered.", &bstr);
+    }
+
     let reduced = match roll {
         0 => 0,
         1 => 1,
@@ -38,6 +65,17 @@ pub fn rare_trident(roll: i32, rng: u32, user: &String) -> String {
         250 => 9,
         _ => panic!("got bad number {}", roll),
     };
+    if let Some(s) = RARE_SPECIFICS.get(&roll) {
+        if rng % 3 == 0 {
+            return s.replace("{A}", &astr).replace("{B}", &bstr);
+        }
+    }
+    if RARE_SKIPS.contains(&roll) {
+        if rng % 3 == 0 {
+            SKIP_TRIGGER.store(true, std::sync::atomic::Ordering::Relaxed);
+            return String::from("");
+        }
+    }
     let i = rng % STRS[reduced].len() as u32;
     return STRS[reduced][i as usize]
         .replace("{A}", &astr)
