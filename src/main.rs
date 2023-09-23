@@ -24,6 +24,7 @@ use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
+use folderbot::enchants::roll_enchant;
 
 use serde::{Deserialize, Serialize};
 
@@ -594,6 +595,13 @@ impl IRCBotClient {
                 // ok, let's do this a bit better.
                 let _ = self.sender.send(TwitchFmt::privmsg(&rare_trident(res, self.rng.gen_range(0..=4096), &user), &self.channel)).await;
                 }
+            }
+            "feature:enchant" => {
+                let mut row = args.parse().unwrap_or(1);
+                if row < 1 { row = 1 }
+                else if row > 3 { row = 3 }
+                let enchant = roll_enchant(&mut self.rng, row);
+                let _ = self.sender.send(TwitchFmt::privmsg(&format!("You rolled the enchantment {}!", enchant), &self.channel)).await;
             }
             "feature:elo" => {
                 log_res("Doing elo things");
