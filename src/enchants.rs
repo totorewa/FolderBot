@@ -53,11 +53,12 @@ pub fn roll_enchant(rng: &mut ThreadRng, mut row: i32) -> String {
     const ENCHANTS: &[&Enchant] = &[
         &Enchant::AQUA_AFFINITY, &Enchant::BANE_OF_ARTHROPODS, &Enchant::BLAST_PROTECTION, &Enchant::CHANNELING,
         &Enchant::DEPTH_STRIDER, &Enchant::EFFICIENCY, &Enchant::FEATHER_FALLING, &Enchant::FIRE_ASPECT,
-        &Enchant::FIRE_PROTECTION, &Enchant::FLAME, &Enchant::IMPALING, &Enchant::INFINITY, &Enchant::KNOCKBACK,
-        &Enchant::LOOTING, &Enchant::LOYALTY, &Enchant::LUCK_OF_THE_SEA, &Enchant::LURE, &Enchant::MULTISHOT,
-        &Enchant::PIERCING, &Enchant::POWER, &Enchant::PROJECTILE_PROTECTION, &Enchant::PROTECTION,
-        &Enchant::PUNCH, &Enchant::QUICK_CHARGE, &Enchant::RESPIRATION, &Enchant::RIPTIDE, &Enchant::SHARPNESS,
-        &Enchant::SILK_TOUCH, &Enchant::SMITE, &Enchant::SWEEPING_EDGE, &Enchant::THORNS, &Enchant::UNBREAKING,
+        &Enchant::FIRE_PROTECTION, &Enchant::FLAME, &Enchant::FORTUNE, &Enchant::IMPALING, &Enchant::INFINITY, 
+        &Enchant::KNOCKBACK, &Enchant::LOOTING, &Enchant::LOYALTY, &Enchant::LUCK_OF_THE_SEA, &Enchant::LURE, 
+        &Enchant::MULTISHOT, &Enchant::PIERCING, &Enchant::POWER, &Enchant::PROJECTILE_PROTECTION, 
+        &Enchant::PROTECTION, &Enchant::PUNCH, &Enchant::QUICK_CHARGE, &Enchant::RESPIRATION, &Enchant::RIPTIDE, 
+        &Enchant::SHARPNESS, &Enchant::SILK_TOUCH, &Enchant::SMITE, &Enchant::SWEEPING_EDGE, &Enchant::THORNS, 
+        &Enchant::UNBREAKING,
     ];
     const ROMAN_MAP: &[&str] = &[
         "I", "II", "III", "IV", "V"
