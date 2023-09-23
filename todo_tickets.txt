@@ -1,0 +1,8 @@
+# Bunch of things to do asap / during rewrites / etc
+
+- File-loadable better trident rolls
+- Maybe a response engine with custom handling
+- points, guessing
+- roll trident drop rate
+- interactivity of commands - like rolltrident does roll, then also maybe damages you, and you have a character? idk
+- hidden/discovered game in rolltrident
