@@ -1,4 +1,3 @@
-use std::cmp::max;
 use rand::{rngs::ThreadRng, Rng};
 
 pub struct Enchant {
@@ -49,7 +48,7 @@ struct EnchantOffer<'a> {
     level: i32,
 }
 
-pub fn roll_enchant(rng: &mut ThreadRng, mut row: i32) -> String {
+pub fn roll_enchant(rng: &mut ThreadRng, row: u8) -> String {
     const ENCHANTS: &[&Enchant] = &[
         &Enchant::AQUA_AFFINITY, &Enchant::BANE_OF_ARTHROPODS, &Enchant::BLAST_PROTECTION, &Enchant::CHANNELING,
         &Enchant::DEPTH_STRIDER, &Enchant::EFFICIENCY, &Enchant::FEATHER_FALLING, &Enchant::FIRE_ASPECT,
@@ -60,21 +59,16 @@ pub fn roll_enchant(rng: &mut ThreadRng, mut row: i32) -> String {
         &Enchant::SHARPNESS, &Enchant::SILK_TOUCH, &Enchant::SMITE, &Enchant::SWEEPING_EDGE, &Enchant::THORNS, 
         &Enchant::UNBREAKING,
     ];
-    const ROMAN_MAP: &[&str] = &[
-        "I", "II", "III", "IV", "V"
-    ];
+    const ROMAN_MAP: &[&str] = &["I", "II", "III", "IV", "V"];
 
-    row -= 1;
-
-    let mut enchantability: i32 = enchant_cost(rng.gen_range(8..=30), row) + rng.gen_range(1..=3);
-    enchantability = max((enchantability as f64 + enchantability as f64 * rng.gen_range(-0.15f64..=0.15f64)).round() as i32, 1);
+    let cost: i32 = enchant_cost(rng, row);
     
     let mut offers: Vec<EnchantOffer> = Vec::new();
     let mut total_weight: i32 = 0;
     for enc in ENCHANTS {
         for i in (0..enc.min_costs.len()).rev() {
             let min_cost = enc.min_costs[i];
-            if enchantability >= min_cost || enchantability <= min_cost + enc.cost_span { // some enchants have a fixed max cost - this does not account for those cases (see i crie comments)
+            if cost >= min_cost && cost <= min_cost + enc.cost_span { // some enchants have a fixed max cost - this does not account for those cases (see i crie comments)
                 offers.push(EnchantOffer { enchant: enc, level: i as i32 + 1 });
                 total_weight += enc.weight;
                 break;
@@ -87,18 +81,16 @@ pub fn roll_enchant(rng: &mut ThreadRng, mut row: i32) -> String {
             let offer = &offers[i];
             format!("{} {}", offer.enchant.name, ROMAN_MAP[(offer.level - 1) as usize])
         }
-        _ => "".to_string()
+        _ => "nothing :(".to_string()
     }
 }
 
-fn enchant_cost(n: i32, row: i32) -> i32 {
-    if row == 0 {
-        return max(n / 3, 1);
+fn enchant_cost(rng: &mut ThreadRng, row: u8) -> i32 {
+    if row == 3 {
+        return 30;
     }
-    if row == 1 {
-        return n * 2 / 3 + 1;
-    }
-    return max(n, 30);
+    let cost = rng.gen_range(8..=30);
+    if row == 1 { cost / 3 } else { cost * 2 / 3 + 1 }
 }
 
 fn weighted_random(rng: &mut ThreadRng, offers: &Vec<EnchantOffer>, total_weight: i32) -> Option<usize> {
