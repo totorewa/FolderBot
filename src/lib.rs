@@ -4,3 +4,4 @@ pub mod game;
 pub mod audio;
 pub mod responses;
 pub mod enchants;
+pub mod spotify;

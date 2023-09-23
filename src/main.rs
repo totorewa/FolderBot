@@ -9,6 +9,7 @@ use async_std::{
 use async_trait::async_trait;
 use futures::{select, FutureExt};
 use lazy_static::lazy_static;
+use rand::Rng;
 use regex::Regex;
 use serde_with::serde_as;
 use serde_with::DefaultOnError;
@@ -16,15 +17,17 @@ use std::collections::HashMap;
 use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
-use rand::Rng;
 
 use reqwest::{header, Client};
+use rspotify::model::{AdditionalType, PlayableItem};
+use rspotify::{prelude::*, AuthCodeSpotify};
 
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
+use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
-use folderbot::enchants::roll_enchant;
+use folderbot::spotify::SpotifyChecker;
 
 use serde::{Deserialize, Serialize};
 
@@ -97,11 +100,11 @@ impl MCSRData {
                 _ => format!("[{} - {}]", MR.win, MR.lose),
             },
             */
-            Some(MR) => format!(
+            Some(mcsr_record) => format!(
                 "[{} - {} ({:.2}%)]",
-                MR.win,
-                MR.lose,
-                MR.win * 100.0 / (MR.lose + MR.win)
+                mcsr_record.win,
+                mcsr_record.lose,
+                mcsr_record.win * 100.0 / (mcsr_record.lose + mcsr_record.win)
             ),
             None => "[No data]".to_string(),
         }
@@ -195,6 +198,7 @@ struct IRCBotClient {
     autosave: bool,
     client: Option<Client>,
     rng: rand::rngs::ThreadRng,
+    spotify: SpotifyChecker,
 }
 
 // Class that receives messages, then sends them.
@@ -235,17 +239,18 @@ impl IRCBotClient {
         (
             IRCBotClient {
                 stream: stream.clone(),
-                nick: nick,
-                secret: secret,
-                reader: reader,
+                nick,
+                secret,
+                reader,
                 sender: s,
-                channel: channel,
-                ct: ct,
+                channel,
+                ct,
                 game: Game::new(),
                 audio: Audio::new(),
                 autosave: false,
                 client: None,
                 rng: rand::thread_rng(),
+                spotify: SpotifyChecker::new().await,
             },
             IRCBotMessageSender {
                 writer: stream,
@@ -564,44 +569,100 @@ impl IRCBotClient {
                 let restr = res.to_string();
                 let selection = self.rng.gen_range(0..=100);
                 if selection < 81 {
-                const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
-                const BAD_STRS: &'static [&'static str] = &["Hehe. A 1. So close, and yet so far, eh {}?", "{} rolled a 1. Everyone clap for {}. They deserve a little light in their life.", "A 1. Nice work, {}. I'm sure you did great in school.", "1. Do you know how likely that is, {}? You should ask PacManMVC. He has a spreadsheet, just to show how bad you are.", "Excuse me, officer? This 1-rolling loser {} keeps yelling 'roll trident!' at me and I can't get them to stop."];
-                const OK_STRS: &'static [&'static str] = &["{N}. Cool. That's not that bad.", "{N}! Wow, that's great! Last time, I rolled a 0, and everyone made fun of me :sob: I'm so jealous of you :sob:", "{N}... not terrible, I suppose.", "{N}. :/ <- That's all I have to say.", "{N}. Yeppers. Yep yep yep. Real good roll you got there, buddy.", "{N}! Whoa. A whole {N} more durability than 0, and you still won't get thunder, LOL!", "Cat fact cat fact! Did you know that the first {N} cats that spawn NEVER contain a Calico? ...seriously, where is my Calico??"];
-                const GOOD_STRS: &'static [&'static str] = &["{N}. Wow! I'm really impressed :)", "{N}! Cool, cool. Cool. Coooool.", "{N}... Hm. It's so good, and yet, really not that good.", "{N}. Here's a cat fact: Did you know they can eat up to 350 fish in a single day?!", "{N}. I lied about the cat fact, just FYI. I don't know anything about cats. He doesn't let me use the internet :(", "{N}. I want a cat. I'd treat it well and not abandon it in a random village.", "{N} temples checked before enchanted golden apple."];
-                const GREAT_STRS: &'static [&'static str] = &["{N}. Great work!!! That's going in your diary, I'm sure.", "{N}! Whoaaaaa. I'm in awe.", "{N}... Pretty great! You know what would be better? Getting outside ;) ;) ;)", "{N}. Oh boy! We got a high roller here!"];
-                if res == 0 {
-                    let _ = self.sender.send(TwitchFmt::privmsg(&LOSER_STRS[self.rng.gen_range(0..LOSER_STRS.len())].replace("{}", &user), &self.channel)).await;
-                    let _ = self.sender.send(TwitchFmt::privmsg(&format!("/timeout {} 10", &user), &self.channel)).await;
-                }
-                else if res == 1 {
-                    let _ = self.sender.send(TwitchFmt::privmsg(&BAD_STRS[self.rng.gen_range(0..BAD_STRS.len())].replace("{}", &user), &self.channel)).await;
-                    let _ = self.sender.send(TwitchFmt::privmsg(&format!("/timeout {} 15", &user), &self.channel)).await;
-                }
-                else if res < 100 {
-                    let _ = self.sender.send(TwitchFmt::privmsg(&OK_STRS[self.rng.gen_range(0..OK_STRS.len())].replace("{N}", &restr), &self.channel)).await;
-                }
-                else if res < 200 {
-                    let _ = self.sender.send(TwitchFmt::privmsg(&GOOD_STRS[self.rng.gen_range(0..GOOD_STRS.len())].replace("{N}", &restr), &self.channel)).await;
-                }
-                else if res < 250 {
-                    let _ = self.sender.send(TwitchFmt::privmsg(&GREAT_STRS[self.rng.gen_range(0..GREAT_STRS.len())].replace("{N}", &restr), &self.channel)).await;
-                }
-                else {
-                    assert!(res == 250);
-                    let _ = self.sender.send(TwitchFmt::privmsg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &user), &self.channel)).await;
-                }
-                }
-                else {
-                // ok, let's do this a bit better.
-                let _ = self.sender.send(TwitchFmt::privmsg(&rare_trident(res, self.rng.gen_range(0..=4096), &user), &self.channel)).await;
+                    const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
+                    const BAD_STRS: &'static [&'static str] = &["Hehe. A 1. So close, and yet so far, eh {}?", "{} rolled a 1. Everyone clap for {}. They deserve a little light in their life.", "A 1. Nice work, {}. I'm sure you did great in school.", "1. Do you know how likely that is, {}? You should ask PacManMVC. He has a spreadsheet, just to show how bad you are.", "Excuse me, officer? This 1-rolling loser {} keeps yelling 'roll trident!' at me and I can't get them to stop."];
+                    const OK_STRS: &'static [&'static str] = &["{N}. Cool. That's not that bad.", "{N}! Wow, that's great! Last time, I rolled a 0, and everyone made fun of me :sob: I'm so jealous of you :sob:", "{N}... not terrible, I suppose.", "{N}. :/ <- That's all I have to say.", "{N}. Yeppers. Yep yep yep. Real good roll you got there, buddy.", "{N}! Whoa. A whole {N} more durability than 0, and you still won't get thunder, LOL!", "Cat fact cat fact! Did you know that the first {N} cats that spawn NEVER contain a Calico? ...seriously, where is my Calico??"];
+                    const GOOD_STRS: &'static [&'static str] = &["{N}. Wow! I'm really impressed :)", "{N}! Cool, cool. Cool. Coooool.", "{N}... Hm. It's so good, and yet, really not that good.", "{N}. Here's a cat fact: Did you know they can eat up to 350 fish in a single day?!", "{N}. I lied about the cat fact, just FYI. I don't know anything about cats. He doesn't let me use the internet :(", "{N}. I want a cat. I'd treat it well and not abandon it in a random village.", "{N} temples checked before enchanted golden apple."];
+                    const GREAT_STRS: &'static [&'static str] = &["{N}. Great work!!! That's going in your diary, I'm sure.", "{N}! Whoaaaaa. I'm in awe.", "{N}... Pretty great! You know what would be better? Getting outside ;) ;) ;)", "{N}. Oh boy! We got a high roller here!"];
+                    if res == 0 {
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                &LOSER_STRS[self.rng.gen_range(0..LOSER_STRS.len())]
+                                    .replace("{}", &user),
+                                &self.channel,
+                            ))
+                            .await;
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                &format!("/timeout {} 10", &user),
+                                &self.channel,
+                            ))
+                            .await;
+                    } else if res == 1 {
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                &BAD_STRS[self.rng.gen_range(0..BAD_STRS.len())]
+                                    .replace("{}", &user),
+                                &self.channel,
+                            ))
+                            .await;
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                &format!("/timeout {} 15", &user),
+                                &self.channel,
+                            ))
+                            .await;
+                    } else if res < 100 {
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                &OK_STRS[self.rng.gen_range(0..OK_STRS.len())]
+                                    .replace("{N}", &restr),
+                                &self.channel,
+                            ))
+                            .await;
+                    } else if res < 200 {
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                &GOOD_STRS[self.rng.gen_range(0..GOOD_STRS.len())]
+                                    .replace("{N}", &restr),
+                                &self.channel,
+                            ))
+                            .await;
+                    } else if res < 250 {
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
+                                &GREAT_STRS[self.rng.gen_range(0..GREAT_STRS.len())]
+                                    .replace("{N}", &restr),
+                                &self.channel,
+                            ))
+                            .await;
+                    } else {
+                        assert!(res == 250);
+                        let _ = self.sender.send(TwitchFmt::privmsg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &user), &self.channel)).await;
+                    }
+                } else {
+                    // ok, let's do this a bit better.
+                    let _ = self
+                        .sender
+                        .send(TwitchFmt::privmsg(
+                            &rare_trident(res, self.rng.gen_range(0..=4096), &user),
+                            &self.channel,
+                        ))
+                        .await;
                 }
             }
             "feature:enchant" => {
                 let mut row = args.parse().unwrap_or(1);
-                if row < 1 { row = 1 }
-                else if row > 3 { row = 3 }
+                if row < 1 {
+                    row = 1
+                } else if row > 3 {
+                    row = 3
+                }
                 let enchant = roll_enchant(&mut self.rng, row);
-                let _ = self.sender.send(TwitchFmt::privmsg(&format!("You rolled the enchantment {}!", enchant), &self.channel)).await;
+                let _ = self
+                    .sender
+                    .send(TwitchFmt::privmsg(
+                        &format!("You rolled the enchantment {}!", enchant),
+                        &self.channel,
+                    ))
+                    .await;
             }
             "feature:elo" => {
                 log_res("Doing elo things");
@@ -735,6 +796,51 @@ impl IRCBotClient {
                     },
                     None => {}
                 }
+            }
+            "core:functioning_get_song" => {
+                let song_response = self
+                    .spotify
+                    .spotify
+                    .current_playing(None, Some([&AdditionalType::Track]))
+                    .await;
+
+                let message = match song_response {
+                    Ok(playing) => match playing {
+                        Some(playing) => match playing.item {
+                            Some(playable_item) => match playable_item {
+                                PlayableItem::Track(track) => {
+                                    let artists = track.artists;
+
+                                    let mut message = String::new();
+                                    for (i, artist) in artists.iter().enumerate() {
+                                        if i != artists.len() - 1 {
+                                            message += &format!("{}, ", artist.name);
+                                        } else {
+                                            message += &format!("{} - ", artist.name);
+                                        }
+                                    }
+
+                                    message += &track.name;
+                                    message
+                                }
+                                _ => String::from(
+                                    "no song, I'm just listening to Folding@Home podcast :)",
+                                ),
+                            },
+                            None => String::from("Error: No song is currently playing."),
+                        },
+                        None => String::from("Error: No song is currently playing."),
+                    },
+                    Err(err) => {
+                        println!("Error when getting the song: {:?}", err);
+                        String::from("Error: Couldn't get the current song.")
+                    }
+                };
+
+                let _ = self
+                    .sender
+                    .send(TwitchFmt::privmsg(&message, &self.channel))
+                    .await;
             }
             "internal:cancel" => {
                 self.audio.stop();

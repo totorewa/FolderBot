@@ -1,6 +1,6 @@
 # Bunch of things to do asap / during rewrites / etc
 
-- File-loadable better trident rolls
+- File-loadable better trident rolls -> later cause I'm lazy
 - Maybe a response engine with custom handling
 - points, guessing
 - roll trident drop rate
