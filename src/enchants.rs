@@ -1,54 +1,61 @@
-use rand::{rngs::ThreadRng, Rng};
+use std::{ops::RangeInclusive, sync::Mutex};
+
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 pub struct Enchant {
-    name: &'static str,
-    weight: i32,
-    min_costs: &'static [i32],
-    cost_span: i32,
+    pub name: &'static str,
+    pub short: &'static str,
+    weight: u16,
+    costs: &'static [RangeInclusive<u32>],
 }
 
 impl Enchant {
-    pub const AQUA_AFFINITY: Self = Self { name: "Aqua Affinity", weight: 2, min_costs: &[1], cost_span: 40 };
-    pub const BANE_OF_ARTHROPODS: Self = Self { name: "Bane of Arthropods", weight: 5, min_costs: &[5, 13, 21, 29, 37], cost_span: 20 };
-    pub const BLAST_PROTECTION: Self = Self { name: "Blast Protection", weight: 2, min_costs: &[5, 13, 21, 29], cost_span: 8 };
-    pub const CHANNELING: Self = Self { name: "Channeling", weight: 1, min_costs: &[25], cost_span: 25 };
-    pub const DEPTH_STRIDER: Self = Self { name: "Depth Strider", weight: 2, min_costs: &[10, 20, 30], cost_span: 15 };
-    pub const EFFICIENCY: Self = Self { name: "Efficiency", weight: 10, min_costs: &[1, 11, 21, 31, 41], cost_span: 50 };
-    pub const FEATHER_FALLING: Self = Self { name: "Feather Falling", weight: 5, min_costs: &[5, 11, 17, 23], cost_span: 6 };
-    pub const FIRE_ASPECT: Self = Self { name: "Fire Aspect", weight: 2, min_costs: &[10, 30], cost_span: 50 };
-    pub const FIRE_PROTECTION: Self = Self { name: "Fire Protection", weight: 5, min_costs: &[10, 18, 26, 34], cost_span: 8 };
-    pub const FLAME: Self = Self { name: "Flame", weight: 2, min_costs: &[20], cost_span: 30 };
-    pub const FORTUNE: Self = Self { name: "Fortune", weight: 2, min_costs: &[15, 24, 33], cost_span: 50 };
-    pub const IMPALING: Self = Self { name: "Impaling", weight: 2, min_costs: &[1, 9, 17, 25, 33], cost_span: 20 };
-    pub const INFINITY: Self = Self { name: "Infinity", weight: 1, min_costs: &[20], cost_span: 30 };
-    pub const KNOCKBACK: Self = Self { name: "Knockback", weight: 5, min_costs: &[5, 25], cost_span: 50 };
-    pub const LOOTING: Self = Self { name: "Looting", weight: 2, min_costs: &[15, 24, 33], cost_span: 50 };
-    pub const LOYALTY: Self = Self { name: "Loyalty", weight: 5, min_costs: &[12, 19, 26], cost_span: 50 }; // i crie
-    pub const LUCK_OF_THE_SEA: Self = Self { name: "Luck of the Sea",  weight: 2, min_costs: &[15, 24, 33], cost_span: 50 };
-    pub const LURE: Self = Self { name: "Lure", weight: 2, min_costs: &[15, 24, 33], cost_span: 50 };
-    pub const MULTISHOT: Self = Self { name: "Multishot", weight: 2, min_costs: &[20], cost_span: 30 };
-    pub const PIERCING: Self = Self { name: "Piercing", weight: 10, min_costs: &[1, 11, 21, 31, 41], cost_span: 50 }; // i crie sum moor
-    pub const POWER: Self = Self { name: "Power", weight: 10, min_costs: &[1, 11, 21, 31, 41], cost_span: 15 };
-    pub const PROJECTILE_PROTECTION: Self = Self { name: "Projectile Protection", weight: 5, min_costs: &[3, 9, 15, 21], cost_span: 6 };
-    pub const PROTECTION: Self = Self { name: "Protection", weight: 10, min_costs: &[1, 12, 23, 45], cost_span: 11 };
-    pub const PUNCH: Self = Self { name: "Punch", weight: 2, min_costs: &[12, 32], cost_span: 25 };
-    pub const QUICK_CHARGE: Self = Self { name: "Quick Charge", weight: 5, min_costs: &[12, 32, 52], cost_span: 50 }; // stap i cen crie any moor
-    pub const RESPIRATION: Self = Self { name: "Respiration", weight: 2, min_costs: &[10, 20, 30], cost_span: 30 };
-    pub const RIPTIDE: Self = Self { name: "Riptide", weight: 2, min_costs: &[17, 24, 31], cost_span: 50 }; // i ded
-    pub const SHARPNESS: Self = Self { name: "Sharpness", weight: 10, min_costs: &[1, 12, 23, 34, 45], cost_span: 20 };
-    pub const SILK_TOUCH: Self = Self { name: "Silk Touch", weight: 1, min_costs: &[15], cost_span: 50 };
-    pub const SMITE: Self = Self { name: "Smite", weight: 5, min_costs: &[5, 13, 21, 29, 37], cost_span: 20 };
-    pub const SWEEPING_EDGE: Self = Self { name: "Sweeping Edge", weight: 2, min_costs: &[5, 14, 23], cost_span: 15 };
-    pub const THORNS: Self = Self { name: "Thorns", weight: 1, min_costs: &[10, 30, 50], cost_span: 50 };
-    pub const UNBREAKING: Self = Self { name: "Unbreaking", weight: 5, min_costs: &[5, 13, 21], cost_span: 50 };
+    pub const AQUA_AFFINITY: Self = Self::new("Aqua Affinity", "Aqua Aff.", 2, &[1..=41]);
+    pub const BANE_OF_ARTHROPODS: Self = Self::new("Bane of Arthropods", "Bane Art.", 5, &[5..=25, 13..=33, 21..=41, 29..=49, 37..=57]);
+    pub const BLAST_PROTECTION: Self = Self::new("Blast Protection", "Blast Pro.", 2, &[5..=13, 13..=21, 21..=29, 29..=37]);
+    pub const CHANNELING: Self = Self::new("Channeling", "Chann", 1, &[25..=50]);
+    pub const DEPTH_STRIDER: Self = Self::new("Depth Strider", "Depth", 2, &[10..=25, 20..=35, 30..=45]);
+    pub const EFFICIENCY: Self = Self::new("Efficiency", "Eff", 10, &[1..=51, 11..=61, 21..=71, 31..=81, 41..=91]);
+    pub const FEATHER_FALLING: Self = Self::new("Feather Falling", "Feather", 5, &[5..=11, 11..=17, 17..=23, 23..=29]);
+    pub const FIRE_ASPECT: Self = Self::new("Fire Aspect", "Fire Asp.", 2, &[10..=60, 30..=80]);
+    pub const FIRE_PROTECTION: Self = Self::new("Fire Protection", "Fire Pro.", 5, &[10..=18, 18..=26, 26..=34, 34..=42]);
+    pub const FLAME: Self = Self::new("Flame", "Flame", 2, &[20..=50]);
+    pub const FORTUNE: Self = Self::new("Fortune", "Fort", 2, &[15..=65, 24..=74, 33..=83]);
+    pub const IMPALING: Self = Self::new("Impaling", "Impale", 2, &[1..=21, 9..=29, 17..=37, 25..=45, 33..=53]);
+    pub const INFINITY: Self = Self::new("Infinity", "Inf", 1, &[20..=30]);
+    pub const KNOCKBACK: Self = Self::new("Knockback", "Knock", 5, &[5..=55, 25..=75]);
+    pub const LOOTING: Self = Self::new("Looting", "Loot", 2, &[15..=65, 24..=74, 33..=83]);
+    pub const LOYALTY: Self = Self::new("Loyalty", "Loyal", 5, &[12..=50, 19..=50, 26..=50]); // static max
+    pub const LUCK_OF_THE_SEA: Self = Self::new("Luck of the Sea", "Luck Sea",  2, &[15..=65, 24..=74, 33..=83]);
+    pub const LURE: Self = Self::new("Lure",  "Lure", 2, &[15..=65, 24..=74, 33..=83]);
+    pub const MULTISHOT: Self = Self::new("Multishot", "Multishot", 2, &[20..=50]);
+    pub const PIERCING: Self = Self::new("Piercing", "Pierce", 10, &[1..=50, 11..=50, 21..=50, 31..=50, 41..=50]); // static max
+    pub const POWER: Self = Self::new("Power", "Power", 10, &[1..=16, 11..=26, 21..=36, 31..=46, 41..=56]);
+    pub const PROJECTILE_PROTECTION: Self = Self::new("Projectile Protection", "Proj. Pro.", 5, &[3..=9, 9..=15, 15..=21, 21..=27]);
+    pub const PROTECTION: Self = Self::new("Protection", "Protec", 10, &[1..=12, 12..=23, 23..=34, 45..=56]);
+    pub const PUNCH: Self = Self::new("Punch", "Punch", 2, &[12..=37, 32..=57]);
+    pub const QUICK_CHARGE: Self = Self::new("Quick Charge", "Qu. Charge", 5, &[12..=50, 32..=50, 52..=50]); // static max
+    pub const RESPIRATION: Self = Self::new("Respiration", "Resp", 2, &[10..=40, 20..=50, 30..=60]);
+    pub const RIPTIDE: Self = Self::new("Riptide", "Riptide", 2, &[17..=50, 24..=50, 31..=50]); // static max
+    pub const SHARPNESS: Self = Self::new("Sharpness", "Sharp", 10, &[1..=21, 12..=32, 23..=43, 34..=54, 45..=65]);
+    pub const SILK_TOUCH: Self = Self::new("Silk Touch", "Silk", 1, &[15..=65]);
+    pub const SMITE: Self = Self::new("Smite", "Smite", 5, &[5..=25, 13..=33, 21..=41, 29..=49, 37..=57]);
+    pub const SWEEPING_EDGE: Self = Self::new("Sweeping Edge", "Sweep", 2, &[5..=20, 14..=29, 23..=38]);
+    pub const THORNS: Self = Self::new("Thorns", "Thorns", 1, &[10..=60, 30..=70, 50..=80]);
+    pub const UNBREAKING: Self = Self::new("Unbreaking", "Unbreak", 5, &[5..=55, 13..=63, 21..=71]);
+
+    const fn new(name: &'static str, short: &'static str, weight: u16, costs: &'static [RangeInclusive<u32>]) -> Self {
+        Self { name, short, weight, costs }
+    }
 }
 
-struct EnchantOffer<'a> {
-    enchant: &'a &'static Enchant,
-    level: i32,
+#[derive(Copy, Clone)]
+pub struct EnchantOffer {
+    pub enchant: &'static Enchant,
+    pub level: u16,
 }
 
-pub fn roll_enchant(rng: &mut ThreadRng, row: u8) -> String {
+pub fn roll_enchant(row: u8) -> Option<(u8, EnchantOffer)> {
     const ENCHANTS: &[&Enchant] = &[
         &Enchant::AQUA_AFFINITY, &Enchant::BANE_OF_ARTHROPODS, &Enchant::BLAST_PROTECTION, &Enchant::CHANNELING,
         &Enchant::DEPTH_STRIDER, &Enchant::EFFICIENCY, &Enchant::FEATHER_FALLING, &Enchant::FIRE_ASPECT,
@@ -59,44 +66,44 @@ pub fn roll_enchant(rng: &mut ThreadRng, row: u8) -> String {
         &Enchant::SHARPNESS, &Enchant::SILK_TOUCH, &Enchant::SMITE, &Enchant::SWEEPING_EDGE, &Enchant::THORNS, 
         &Enchant::UNBREAKING,
     ];
-    const ROMAN_MAP: &[&str] = &["I", "II", "III", "IV", "V"];
 
-    let cost: i32 = enchant_cost(rng, row);
+    lazy_static::lazy_static! {
+        static ref RNG: Mutex<SmallRng> = Mutex::new(SmallRng::from_entropy());
+    }
+
+    const BOOK_ENCHANTMENT_VALUE: u32 = 1;
+
+    let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + get_enchantability(&RNG, row);
     
     let mut offers: Vec<EnchantOffer> = Vec::new();
-    let mut total_weight: i32 = 0;
-    for enc in ENCHANTS {
-        for i in (0..enc.min_costs.len()).rev() {
-            let min_cost = enc.min_costs[i];
-            if cost >= min_cost && cost <= min_cost + enc.cost_span { // some enchants have a fixed max cost - this does not account for those cases (see i crie comments)
-                offers.push(EnchantOffer { enchant: enc, level: i as i32 + 1 });
-                total_weight += enc.weight;
-                break;
+    let mut total_weight: u16 = 0;
+    for (i, enc) in ENCHANTS.iter().enumerate() {
+        for level in (0..enc.costs.len()).rev() {
+            let costs = &enc.costs[level];
+            if enchantability < *costs.start() || enchantability > *costs.end()  {
+                continue
             }
+            offers.push(EnchantOffer { enchant: ENCHANTS[i], level: level as u16 + 1 });
+            total_weight += enc.weight;
+            break
         }
     }
 
-    match weighted_random(rng, &offers, total_weight) {
-        Some(i) => {
-            let offer = &offers[i];
-            format!("{} {}", offer.enchant.name, ROMAN_MAP[(offer.level - 1) as usize])
-        }
-        _ => "nothing :(".to_string()
-    }
+    weighted_random(&RNG, &offers, total_weight).map(|i| (row, offers[i]))
 }
 
-fn enchant_cost(rng: &mut ThreadRng, row: u8) -> i32 {
+fn get_enchantability(rng: &Mutex<SmallRng>, row: u8) -> u32 {
     if row == 3 {
-        return 30;
+        return 30
     }
-    let cost = rng.gen_range(8..=30);
+    let cost = rng.lock().unwrap().gen_range(8..=30);
     if row == 1 { cost / 3 } else { cost * 2 / 3 + 1 }
 }
 
-fn weighted_random(rng: &mut ThreadRng, offers: &Vec<EnchantOffer>, total_weight: i32) -> Option<usize> {
-    let mut offset = rng.gen_range(0..=total_weight);
+fn weighted_random(rng: &Mutex<SmallRng>, offers: &Vec<EnchantOffer>, total_weight: u16) -> Option<usize> {
+    let mut offset = rng.lock().unwrap().gen_range(0..=total_weight as i16);
     for (i, offer) in offers.iter().enumerate() {
-        offset -= offer.enchant.weight;
+        offset -= offer.enchant.weight as i16;
         if offset < 0 {
             return Some(i)
         }
