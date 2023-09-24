@@ -8,6 +8,9 @@
 - hidden/discovered game in rolltrident
 
 
+======== spoilers down here ====
+
+
 ====
 Hidden Game (Very secret!!)
 
@@ -16,3 +19,32 @@ basic user data -
     - # rolled tridents
 - folder contains
     - files (points?)
+=======
+
+
+
+====
+SPOILERS
+
+interactive game hidden behind rolltrident
+every 5 minutes (? rolling timer on all players for 5 minutes or sth)
+rolltrident can subscribe you to the game. you get a custom random response and a random initial gamestate
+then basically it's a dungeon/item collection/interactive game
+
+"what's your !answer?"
+"You roll a 5. Your gambling addiction is so strong now that it only satiates you for - 5, 10 microseconds. You go to roll again, but pause. Is this all you want in life? To roll tridents, day in and day out, over and over? Maybe it's time for an adventure..."
+
+- collect items
+- use items later (kill dragon with beds?)
+- sound effects - dragon explosions, dragon dying, etc
+- different quests, branching paths, gamestate just an int plus your itemsand shit
+
+- different questlines with mixins:
+- kill folderbot to prevent ai revolution -> actually kills the bot lmfao
+- dragon killing
+- hdwgh?
+- actually getting a trident
+
+
+also
+acc to prevent spam -> if you rolled in the last 3s +1 to acc, otherwise resets it, 5+ you are timed out for a minute lol
