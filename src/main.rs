@@ -13,7 +13,7 @@ use rand::Rng;
 use regex::Regex;
 use serde_with::serde_as;
 use serde_with::DefaultOnError;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::atomic::{AtomicU64, ATOMIC_USIZE_INIT, Ordering}};
 use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
@@ -921,6 +921,15 @@ impl IRCBotClient {
             match self.reader.read_line(&mut line).await {
                 Ok(_) => {
                     println!("[Received] Message: '{}'", line.trim());
+
+                    // maybe save our game data real quick...
+                    static LAST_SAVE: AtomicU64 = AtomicU64::new(0);
+
+                    let tm = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::from_secs(0)).as_secs();
+                    if (LAST_SAVE.load(Ordering::Relaxed) + 60 * 5) < tm {
+                        LAST_SAVE.store(tm, Ordering::Relaxed);
+                        self.player_data.save();
+                    }
 
                     // First, parse if it's a private message, or a skip/ping/etc.
                     let (name, message) = match PRIV_RE.captures(line.as_str()) {
