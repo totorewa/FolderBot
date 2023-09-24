@@ -591,6 +591,9 @@ impl IRCBotClient {
             "feature:tridentpb" => {
                 let _ = self.sender.send(TwitchFmt::privmsg(&format!("{}'s trident pb is: {}", &user, pd.max_trident), &self.channel)).await;
             }
+            "feature:tridentlb" => {
+                let _ = self.sender.send(TwitchFmt::privmsg(&format!("Trident Leaderboard: {}", self.player_data.leaderboard()), &self.channel));
+            }
             "feature:trident" => {
                 // acc data
                 pd.tridents_rolled += 1;

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
@@ -59,6 +60,15 @@ impl PlayerData {
 
     pub fn player(&mut self, name: &String) -> &mut Player {
         self.players.entry(name.clone()).or_insert_with(|| Player::new(name.clone()))
+    }
+
+    pub fn leaderboard(&self) -> String {
+        let itr = self.players.iter().sorted_by(|a, b| Ord::cmp(&a.1.max_trident, &b.1.max_trident));
+        let mut lb = std::vec::Vec::new();
+        for (u, d) in itr.take(5) {
+            lb.push(format!("{}: {}", &u, d.max_trident));
+        }
+        lb.join(", ")
     }
 }
 
