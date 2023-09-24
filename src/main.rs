@@ -17,13 +17,15 @@ use std::collections::HashMap;
 use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
+use std::time::SystemTime;
 
 use reqwest::{header, Client};
 use rspotify::model::{AdditionalType, PlayableItem};
-use rspotify::{prelude::*, AuthCodeSpotify};
+use rspotify::prelude::*;
 
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
+use folderbot::db::player::{Player, PlayerData};
 use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
@@ -199,6 +201,7 @@ struct IRCBotClient {
     client: Option<Client>,
     rng: rand::rngs::ThreadRng,
     spotify: SpotifyChecker,
+    player_data: PlayerData,
 }
 
 // Class that receives messages, then sends them.
@@ -251,6 +254,7 @@ impl IRCBotClient {
                 client: None,
                 rng: rand::thread_rng(),
                 spotify: SpotifyChecker::new().await,
+                player_data: PlayerData::new(),
             },
             IRCBotMessageSender {
                 writer: stream,
@@ -290,6 +294,15 @@ impl IRCBotClient {
         let format_str = format!("[Name({}),Command({})] Result: ", user, cmd);
         let log_res = |s| println!("{}{}", format_str, s);
 
+        // user data <3
+        let pd: &mut Player = self.player_data.player(&user);
+        pd.sent_messages += 1;
+        let tm = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::from_secs(0)).as_secs();
+        if tm > (pd.last_message + /* 60s * 15m */ 60 * 15) {
+            pd.last_message = tm;
+            pd.files += 25;
+        }
+
         // Compose the command
         // !todo -> prefix: !, cmd: todo
         // !!todo -> prefix: !!, cmd: todo
@@ -308,6 +321,8 @@ impl IRCBotClient {
                 return Command::Continue; // Not a valid command
             }
         };
+
+        pd.sent_commands += 1;
 
         if prefix != node.prefix && !(prefix == "" && node.prefix == "^") {
             log_res("Skipped as prefix does not match.");
@@ -462,6 +477,16 @@ impl IRCBotClient {
                 log_res("Stopping as requested by command.");
                 return Command::Stop;
             }
+            "meta:playerdata" => {
+                let _ = self
+                    .sender
+                    .send(TwitchFmt::privmsg(
+                        &format!("{}", pd),
+                        &self.channel,
+                    ))
+                    .await
+                    .unwrap();
+            }
             "meta:say" => {
                 log_res("Sent a privmsg.");
                 let _ = self
@@ -564,8 +589,13 @@ impl IRCBotClient {
                 }
             }
             "feature:trident" => {
+                // acc data
+                pd.tridents_rolled += 1;
                 let inner = self.rng.gen_range(0..=250);
                 let res = self.rng.gen_range(0..=inner);
+                // res is your roll
+                pd.max_trident = std::cmp::max(pd.max_trident, res as u64);
+                pd.trident_acc += res as u64;
                 let restr = res.to_string();
                 let selection = self.rng.gen_range(0..=100);
                 if selection < 81 {
@@ -894,22 +924,24 @@ impl IRCBotClient {
                         // there must be a better way...
                         Some(caps) => (caps.str_at(1), caps.str_at(2)),
                         None => match self.handle_twitch(&line).await {
+                            // todo - reconnect instead of stopping.
                             Command::Stop => return Ok("Stopped due to twitch.".to_string()),
                             _ => continue,
                         },
                     };
 
                     // Now we filter based on the username & the message sent.
-                    match filter(&name, &message) {
-                        FilterResult::Skip => continue,
-                        FilterResult::Ban(reason) => self.ban(&name, &reason).await,
-                        _ => {}
-                    }
+                    //match filter(&name, &message) {
+                    //    FilterResult::Skip => continue,
+                    //    FilterResult::Ban(reason) => self.ban(&name, &reason).await,
+                    //    _ => {}
+                    //}
 
                     // Now, we parse the command out of the message.
                     let (prefix, command) = match COMMAND_RE.captures(message.as_str()) {
                         // there must be a better way...
                         Some(caps) => (caps.str_at(1), caps.str_at(2)),
+                        // this never happens btw, we basically (?) always match (??)
                         None => continue,
                     };
 
