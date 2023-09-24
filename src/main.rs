@@ -928,6 +928,7 @@ impl IRCBotClient {
                     let tm = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::from_secs(0)).as_secs();
                     if (LAST_SAVE.load(Ordering::Relaxed) + 60 * 5) < tm {
                         LAST_SAVE.store(tm, Ordering::Relaxed);
+                        println!("[Note] Autosaving player data.");
                         self.player_data.save();
                     }
 
