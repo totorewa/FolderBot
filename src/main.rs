@@ -594,7 +594,7 @@ impl IRCBotClient {
             "feature:tridentlb" => {
                 let lb = self.player_data.leaderboard();
                 log_res(format!("Generated leaderboard: {}", &lb).as_str());
-                let _ = self.sender.send(TwitchFmt::privmsg(&format!("Trident Leaderboard: {}", &lb), &self.channel));
+                let _ = self.sender.send(TwitchFmt::privmsg(&format!("Trident Leaderboard: {}", &lb), &self.channel)).await;
                 return Command::Continue;
             }
             "feature:trident" => {
