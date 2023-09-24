@@ -688,20 +688,44 @@ impl IRCBotClient {
                 }
             }
             "feature:enchant" => {
-                let mut row = args.parse().unwrap_or(1);
-                if row < 1 {
-                    row = 1
-                } else if row > 3 {
-                    row = 3
-                }
-                let enchant = roll_enchant(&mut self.rng, row);
+                const ROMAN_MAP: &[&str] = &["I", "II", "III", "IV", "V"];
+                match args
+                    .parse::<u8>()
+                    .ok()
+                    .filter(|&row| row >= 1 && row <= 3)
+                    .and_then(|row| roll_enchant(row))
+                {
+                    Some((row, offer)) => {
+                        if offer.level > 0 && (offer.level as usize) < ROMAN_MAP.len() {
+                            // TODO do snarky responses based on weight and level maybe?
                 let _ = self
                     .sender
                     .send(TwitchFmt::privmsg(
-                        &format!("You rolled the enchantment {}!", enchant),
+                                    &format!(
+                                        "You rolled the level {} enchant {} {}!",
+                                        row,
+                                        &offer.enchant.name,
+                                        ROMAN_MAP[offer.level as usize - 1]
+                                    ),
+                                    &self.channel,
+                                ))
+                                .await;
+                        } else {
+                            let _ = self
+                                .sender
+                                .send(TwitchFmt::privmsg(
+                                    &String::from(
+                                        "Somehow you rolled an impossible enchant... good for you",
+                                    ),
                         &self.channel,
                     ))
                     .await;
+            }
+                    }
+                    _ => {
+                        let _ = self.sender.send(TwitchFmt::privmsg(&String::from("You need to choose which row in the enchantment table you want to roll for (1-3)"), &self.channel)).await;
+                    }
+                }
             }
             "feature:elo" => {
                 log_res("Doing elo things");
