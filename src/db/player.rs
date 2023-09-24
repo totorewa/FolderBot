@@ -62,6 +62,15 @@ impl PlayerData {
         self.players.entry(name.clone()).or_insert_with(|| Player::new(name.clone()))
     }
 
+    pub fn player_or(&mut self, name: &String, other_name: &String) -> &mut Player {
+        if self.players.contains_key(name) {
+            self.player(name)
+        }
+        else {
+            self.player(other_name)
+        }
+    }
+
     pub fn leaderboard(&self) -> String {
         let itr = self.players.iter().sorted_by(|a, b| Ord::cmp(&a.1.max_trident, &b.1.max_trident));
         let mut lb = std::vec::Vec::new();

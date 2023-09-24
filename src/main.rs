@@ -481,7 +481,7 @@ impl IRCBotClient {
                 let _ = self
                     .sender
                     .send(TwitchFmt::privmsg(
-                        &format!("{}", pd),
+                        &format!("{}", &self.player_data.player_or(&args, &user)),
                         &self.channel,
                     ))
                     .await
