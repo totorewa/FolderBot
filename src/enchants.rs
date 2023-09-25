@@ -101,7 +101,7 @@ fn get_enchantability(rng: &Mutex<SmallRng>, row: u8) -> u32 {
 }
 
 fn weighted_random(rng: &Mutex<SmallRng>, offers: &Vec<EnchantOffer>, total_weight: u16) -> Option<usize> {
-    let mut offset = rng.lock().unwrap().gen_range(0..=total_weight as i16);
+    let mut offset = rng.lock().unwrap().gen_range(0..total_weight as i16);
     for (i, offer) in offers.iter().enumerate() {
         offset -= offer.enchant.weight as i16;
         if offset < 0 {
