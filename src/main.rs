@@ -689,43 +689,49 @@ impl IRCBotClient {
             }
             "feature:enchant" => {
                 const ROMAN_MAP: &[&str] = &["I", "II", "III", "IV", "V"];
-                match args
-                    .parse::<u8>()
-                    .ok()
-                    .filter(|&row| row >= 1 && row <= 3)
-                    .and_then(|row| roll_enchant(row))
+                const GREAT_ROLLS: &'static [&'static str] = &["Impressive! You've got yourself a {0} {1} book for {2} levels with {3} bookshel{4}.", "A truly magical outcome! {0} {1} awaits you for {2} levels with {3} bookshel{4}.", "Your enchantment game is strong! {0} {1} for you for the price of {2} levels. Not bad for {3} bookshel{4}.", "Surely you must be RNG-manipulating! I mean, {0} {1} for {2} levels!? I guess it did take {3} bookshel{4} to get."];
+                const GOOD_ROLLS: &'static [&'static str] = &["{0} {1} from {3} bookshel{4}? Not too shabby! Yours for {2} levels.", "A respectable roll! Can't go wrong with {0} {1} for {2} levels with {3} bookshel{4}.", "{0} {1} for {2} levels. Could be worse, lol. I like your {3} bookshel{4}.", "Wow, not bad! {0} {1} for {2} levels with {3} bookshel{4}."];
+                const BAD_ROLLS: &'static [&'static str] = &["{0} {1} for {2} levels? Could be worse, I guess... Might need more than {3} bookshel{4}...", "You rolled {0} {1} for {2} levels with {3} bookshel{4}. Keep trying!", "You rolled {0}! Nice!! Oh wait, its only {0} {1}. Oh well, it's only {2} levels at least. Maybe try using more than {3} bookshel{4} or something."];
+                const TERRIBLE_ROLLS: &'static [&'static str] = &["{0}.. you know what. I can't be bothered telling you the level, it's too embarrassing. Let's just pretend it's a good level.", "Wow.. a {0} {1}.. amazing.. I wouldn't spend {2} levels on that, {5}.", "{0} {1}... zzz... something something {2} levels something {3} bookshel{4} idk I can't be bothered anymore", "Jackpot! You scored a {0} {1}. What are the odds of being that bad?? {2} levels?? Honestly. Get more bookshelves, {3} isn't enough.", "Yeah I'm not saying the response. That's just embarassing, {5}. Almost as embarassing as misspelling embarrassing."];
+                match roll_enchant().filter(|o| o.level > 0 && (o.level as usize) < ROMAN_MAP.len())
                 {
-                    Some((row, offer)) => {
-                        if offer.level > 0 && (offer.level as usize) < ROMAN_MAP.len() {
-                            // TODO do snarky responses based on weight and level maybe?
-                let _ = self
-                    .sender
-                    .send(TwitchFmt::privmsg(
-                                    &format!(
-                                        "You rolled the level {} enchant {} {}!",
-                                        row,
-                                        &offer.enchant.name,
-                                        ROMAN_MAP[offer.level as usize - 1]
-                                    ),
-                                    &self.channel,
-                                ))
-                                .await;
+                    Some(offer) => {
+                        pd.enchants_rolled += 1;
+                        let response = if offer.special_response {
+                            let resp_list = if offer.bookshelves >= 13 && offer.row == 3 { GREAT_ROLLS } 
+                            else if offer.bookshelves >= 10 && offer.row > 1 { GOOD_ROLLS }
+                            else if offer.bookshelves < 2 { TERRIBLE_ROLLS }
+                            else { BAD_ROLLS };
+                            resp_list[self.rng.gen_range(0..resp_list.len())]
+                                .replace("{0}", &offer.enchant.name)
+                                .replace("{1}", ROMAN_MAP[offer.level as usize - 1])
+                                .replace("{2}", &offer.cost.to_string())
+                                .replace("{3}", &offer.bookshelves.to_string())
+                                .replace("{4}", if offer.bookshelves == 1 { "f" } else { "ves" })
+                                .replace("{5}", &user)
                         } else {
+                            format!(
+                                "You rolled {0} {1} for {2} levels with {3} bookshel{4}!",
+                                &offer.enchant.name,
+                                ROMAN_MAP[offer.level as usize - 1],
+                                offer.cost,
+                                offer.bookshelves,
+                                if offer.bookshelves == 1 { "f" } else { "ves" }
+                            )
+                        };
+                        let _ = self.sender.send(TwitchFmt::privmsg(&response, &self.channel)).await;
+                    }
+                    _ => {
                             let _ = self
                                 .sender
                                 .send(TwitchFmt::privmsg(
-                                    &String::from(
-                                        "Somehow you rolled an impossible enchant... good for you",
-                                    ),
-                        &self.channel,
-                    ))
-                    .await;
-            }
+                                &"Somehow you rolled an impossible enchant... good for you"
+                                    .to_string(),
+                                    &self.channel,
+                                ))
+                                .await;
+                        }
                     }
-                    _ => {
-                        let _ = self.sender.send(TwitchFmt::privmsg(&String::from("You need to choose which row in the enchantment table you want to roll for (1-3)"), &self.channel)).await;
-                    }
-                }
             }
             "feature:elo" => {
                 log_res("Doing elo things");

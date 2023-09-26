@@ -52,10 +52,14 @@ impl Enchant {
 #[derive(Copy, Clone)]
 pub struct EnchantOffer {
     pub enchant: &'static Enchant,
-    pub level: u16,
+    pub level: u8,
+    pub row: u8,
+    pub cost: u8,
+    pub bookshelves: u32,
+    pub special_response: bool,
 }
 
-pub fn roll_enchant(row: u8) -> Option<(u8, EnchantOffer)> {
+pub fn roll_enchant() -> Option<EnchantOffer> {
     const ENCHANTS: &[&Enchant] = &[
         &Enchant::AQUA_AFFINITY, &Enchant::BANE_OF_ARTHROPODS, &Enchant::BLAST_PROTECTION, &Enchant::CHANNELING,
         &Enchant::DEPTH_STRIDER, &Enchant::EFFICIENCY, &Enchant::FEATHER_FALLING, &Enchant::FIRE_ASPECT,
@@ -73,39 +77,75 @@ pub fn roll_enchant(row: u8) -> Option<(u8, EnchantOffer)> {
 
     const BOOK_ENCHANTMENT_VALUE: u32 = 1;
 
-    let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + get_enchantability(&RNG, row);
+    let (row, bookshelves) = random_enchantment_setup(&RNG);
+    let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + random_cost(&RNG, row, bookshelves);
     
-    let mut offers: Vec<EnchantOffer> = Vec::new();
+    let mut offers: Vec<(&Enchant, u8)> = Vec::new();
     let mut total_weight: u16 = 0;
     for (i, enc) in ENCHANTS.iter().enumerate() {
         for level in (0..enc.costs.len()).rev() {
             let costs = &enc.costs[level];
-            if enchantability < *costs.start() || enchantability > *costs.end()  {
-                continue
+            if enchantability < *costs.start() || enchantability > *costs.end() {
+                continue;
             }
-            offers.push(EnchantOffer { enchant: ENCHANTS[i], level: level as u16 + 1 });
+            offers.push((ENCHANTS[i], level as u8 + 1));
             total_weight += enc.weight;
-            break
+            break;
         }
     }
 
-    weighted_random(&RNG, &offers, total_weight).map(|i| (row, offers[i]))
+    weighted_random(&RNG, &offers, total_weight).map(|i| {
+        let (enchant, level) = offers[i];
+        EnchantOffer {
+            enchant,
+            level,
+            row,
+            cost: (enchantability - BOOK_ENCHANTMENT_VALUE) as u8,
+            bookshelves,
+            special_response: RNG.lock().unwrap().gen_bool(0.2),
+        }
+    })
 }
 
-fn get_enchantability(rng: &Mutex<SmallRng>, row: u8) -> u32 {
-    if row == 3 {
-        return 30
+fn random_cost(rng_mutex: &Mutex<SmallRng>, row: u8, bookshelves: u32) -> u32 {
+    let mut rng = rng_mutex.lock().unwrap();
+    let mut rnd = 1 + (bookshelves >> 1) + bookshelves;
+    rnd = rng.gen_range(rnd..=(rnd + 8));
+    match row {
+        1 => 1.max(rnd / 3),
+        2 => rnd * 2 / 3 + 1,
+        _ => rnd.max(bookshelves * 2),
     }
-    let cost = rng.lock().unwrap().gen_range(8..=30);
-    if row == 1 { cost / 3 } else { cost * 2 / 3 + 1 }
 }
 
-fn weighted_random(rng: &Mutex<SmallRng>, offers: &Vec<EnchantOffer>, total_weight: u16) -> Option<usize> {
-    let mut offset = rng.lock().unwrap().gen_range(0..=total_weight as i16);
+/// Get random enchantment table row and random number of bookshelves
+/// 
+/// About 1/25 chance of 15 bookshelves, I think..
+/// 
+/// Twice the chance of getting first or second row than the third row.
+fn random_enchantment_setup(rng_mutex: &Mutex<SmallRng>) -> (u8, u32) {
+    let mut rng = rng_mutex.lock().unwrap();
+    let upperbounds = rng.gen_range(0..32).min(15);
+    (
+        match rng.gen_range(0..5) {
+            ch if ch == 4 => 3,
+            ch if ch > 1 => 2,
+            _ => 1,
+        },
+        rng.gen_range(0..=upperbounds),
+    )
+}
+
+fn weighted_random(
+    rng: &Mutex<SmallRng>,
+    offers: &Vec<(&Enchant, u8)>,
+    total_weight: u16,
+) -> Option<usize> {
+    let mut offset = rng.lock().unwrap().gen_range(0..total_weight as i16);
     for (i, offer) in offers.iter().enumerate() {
-        offset -= offer.enchant.weight as i16;
+        offset -= offer.0.weight as i16;
         if offset < 0 {
-            return Some(i)
+            return Some(i);
         }
     }
     None

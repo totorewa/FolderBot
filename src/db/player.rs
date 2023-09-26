@@ -20,6 +20,10 @@ pub struct Player {
     pub trident_acc: u64,
     pub max_trident: u64,
     pub tridents_rolled: u64,
+
+    // Enchant metadata
+    #[serde(default)]
+    pub enchants_rolled: u64,
 }
 
 impl std::fmt::Display for Player {
