@@ -600,7 +600,20 @@ impl IRCBotClient {
             "feature:trident" => {
                 // acc data
                 pd.tridents_rolled += 1;
-                let inner = self.rng.gen_range(0..=250);
+                let mut upperbounds = 250;
+                if pd.last_trident != 0 {
+                    const COOLDOWN: u64 = 5;
+                    const MAX_COOLDOWN: u64 = 150;
+                    let restore = (COOLDOWN as f64 * (((tm - pd.last_trident) as f64) / 60.0)).floor() as i64;
+                    pd.trident_cooldown = (pd.trident_cooldown as i64 - restore).max(0) as u64;
+                    if pd.trident_cooldown != 0 {
+                        let decay = pd.trident_cooldown as f64 / 100.0;
+                        upperbounds = (upperbounds - (MAX_COOLDOWN as f64 * (1.0 - (1.0 - decay).powi(3))).round() as i32).max(100);
+                    }
+                }
+                pd.trident_cooldown = (pd.trident_cooldown + 5).min(100);
+                pd.last_trident = tm;
+                let inner = self.rng.gen_range(0..=upperbounds);
                 let res = self.rng.gen_range(0..=inner);
                 // res is your roll
                 pd.max_trident = std::cmp::max(pd.max_trident, res as u64);
