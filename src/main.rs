@@ -696,6 +696,7 @@ impl IRCBotClient {
                 match roll_enchant().filter(|o| o.level > 0 && (o.level as usize) < ROMAN_MAP.len())
                 {
                     Some(offer) => {
+                        pd.enchants_rolled += 1;
                         let response = if offer.special_response {
                             let resp_list = if offer.bookshelves >= 13 && offer.row == 3 { GREAT_ROLLS } 
                             else if offer.bookshelves >= 10 && offer.row > 1 { GOOD_ROLLS }
