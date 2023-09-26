@@ -13,11 +13,14 @@ use rand::Rng;
 use regex::Regex;
 use serde_with::serde_as;
 use serde_with::DefaultOnError;
-use std::{collections::HashMap, sync::atomic::{AtomicU64, ATOMIC_USIZE_INIT, Ordering}};
 use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
 use std::time::SystemTime;
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicU64, Ordering, ATOMIC_USIZE_INIT},
+};
 
 use reqwest::{header, Client};
 use rspotify::model::{AdditionalType, PlayableItem};
@@ -297,7 +300,10 @@ impl IRCBotClient {
         // user data <3
         let pd: &mut Player = self.player_data.player(&user);
         pd.sent_messages += 1;
-        let tm = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::from_secs(0)).as_secs();
+        let tm = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs();
         if tm > (pd.last_message + /* 60s * 15m */ 60 * 15) {
             pd.last_message = tm;
             pd.files += 25;
@@ -481,7 +487,10 @@ impl IRCBotClient {
                 let _ = self
                     .sender
                     .send(TwitchFmt::privmsg(
-                        &format!("{}", &self.player_data.player_or(&args.to_lowercase(), &user)),
+                        &format!(
+                            "{}",
+                            &self.player_data.player_or(&args.to_lowercase(), &user)
+                        ),
                         &self.channel,
                     ))
                     .await
@@ -581,20 +590,44 @@ impl IRCBotClient {
                 if let Ok(get_resp) = reqwest::get("http://shnenanigans.pythonanywhere.com/").await
                 {
                     if let Ok(get_text) = get_resp.text().await {
-                        let _ = self
-                            .sender
-                            .send(TwitchFmt::privmsg(&get_text, &self.channel))
-                            .await;
+                        if get_text.len() > 100 {
+                            let _ = self
+                                .sender
+                                .send(TwitchFmt::privmsg(
+                                    &String::from(
+                                        "@shenaningans this command be broken again :sob:",
+                                    ),
+                                    &self.channel,
+                                ))
+                                .await;
+                        } else {
+                            let _ = self
+                                .sender
+                                .send(TwitchFmt::privmsg(&get_text, &self.channel))
+                                .await;
+                        }
                     }
                 }
             }
             "feature:tridentpb" => {
-                let _ = self.sender.send(TwitchFmt::privmsg(&format!("{}'s trident pb is: {}", &user, pd.max_trident), &self.channel)).await;
+                let _ = self
+                    .sender
+                    .send(TwitchFmt::privmsg(
+                        &format!("{}'s trident pb is: {}", &user, pd.max_trident),
+                        &self.channel,
+                    ))
+                    .await;
             }
             "feature:tridentlb" => {
                 let lb = self.player_data.leaderboard();
                 log_res(format!("Generated leaderboard: {}", &lb).as_str());
-                let _ = self.sender.send(TwitchFmt::privmsg(&format!("Trident Leaderboard: {}", &lb), &self.channel)).await;
+                let _ = self
+                    .sender
+                    .send(TwitchFmt::privmsg(
+                        &format!("Trident Leaderboard: {}", &lb),
+                        &self.channel,
+                    ))
+                    .await;
                 return Command::Continue;
             }
             "feature:trident" => {
@@ -698,10 +731,15 @@ impl IRCBotClient {
                     Some(offer) => {
                         pd.enchants_rolled += 1;
                         let response = if offer.special_response {
-                            let resp_list = if offer.bookshelves >= 13 && offer.row == 3 { GREAT_ROLLS } 
-                            else if offer.bookshelves >= 10 && offer.row > 1 { GOOD_ROLLS }
-                            else if offer.bookshelves < 2 { TERRIBLE_ROLLS }
-                            else { BAD_ROLLS };
+                            let resp_list = if offer.bookshelves >= 13 && offer.row == 3 {
+                                GREAT_ROLLS
+                            } else if offer.bookshelves >= 10 && offer.row > 1 {
+                                GOOD_ROLLS
+                            } else if offer.bookshelves < 2 {
+                                TERRIBLE_ROLLS
+                            } else {
+                                BAD_ROLLS
+                            };
                             resp_list[self.rng.gen_range(0..resp_list.len())]
                                 .replace("{0}", &offer.enchant.name)
                                 .replace("{1}", ROMAN_MAP[offer.level as usize - 1])
@@ -719,19 +757,22 @@ impl IRCBotClient {
                                 if offer.bookshelves == 1 { "f" } else { "ves" }
                             )
                         };
-                        let _ = self.sender.send(TwitchFmt::privmsg(&response, &self.channel)).await;
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(&response, &self.channel))
+                            .await;
                     }
                     _ => {
-                            let _ = self
-                                .sender
-                                .send(TwitchFmt::privmsg(
+                        let _ = self
+                            .sender
+                            .send(TwitchFmt::privmsg(
                                 &"Somehow you rolled an impossible enchant... good for you"
                                     .to_string(),
-                                    &self.channel,
-                                ))
-                                .await;
-                        }
+                                &self.channel,
+                            ))
+                            .await;
                     }
+                }
             }
             "feature:elo" => {
                 log_res("Doing elo things");
@@ -961,7 +1002,10 @@ impl IRCBotClient {
                     // maybe save our game data real quick...
                     static LAST_SAVE: AtomicU64 = AtomicU64::new(0);
 
-                    let tm = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or(Duration::from_secs(0)).as_secs();
+                    let tm = SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .unwrap_or(Duration::from_secs(0))
+                        .as_secs();
                     if (LAST_SAVE.load(Ordering::Relaxed) + 60 * 5) < tm {
                         LAST_SAVE.store(tm, Ordering::Relaxed);
                         println!("[Note] Autosaving player data.");
