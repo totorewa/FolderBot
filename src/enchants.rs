@@ -9,6 +9,7 @@ pub struct Enchant {
     costs: &'static [RangeInclusive<u32>],
 }
 
+#[rustfmt::skip]
 impl Enchant {
     pub const AQUA_AFFINITY: Self = Self::new("Aqua Affinity", "Aqua Aff.", 2, &[1..=41]);
     pub const BANE_OF_ARTHROPODS: Self = Self::new("Bane of Arthropods", "Bane Art.", 5, &[5..=25, 13..=33, 21..=41, 29..=49, 37..=57]);
@@ -61,13 +62,38 @@ pub struct EnchantOffer {
 
 pub fn roll_enchant() -> Option<EnchantOffer> {
     const ENCHANTS: &[&Enchant] = &[
-        &Enchant::AQUA_AFFINITY, &Enchant::BANE_OF_ARTHROPODS, &Enchant::BLAST_PROTECTION, &Enchant::CHANNELING,
-        &Enchant::DEPTH_STRIDER, &Enchant::EFFICIENCY, &Enchant::FEATHER_FALLING, &Enchant::FIRE_ASPECT,
-        &Enchant::FIRE_PROTECTION, &Enchant::FLAME, &Enchant::FORTUNE, &Enchant::IMPALING, &Enchant::INFINITY, 
-        &Enchant::KNOCKBACK, &Enchant::LOOTING, &Enchant::LOYALTY, &Enchant::LUCK_OF_THE_SEA, &Enchant::LURE, 
-        &Enchant::MULTISHOT, &Enchant::PIERCING, &Enchant::POWER, &Enchant::PROJECTILE_PROTECTION, 
-        &Enchant::PROTECTION, &Enchant::PUNCH, &Enchant::QUICK_CHARGE, &Enchant::RESPIRATION, &Enchant::RIPTIDE, 
-        &Enchant::SHARPNESS, &Enchant::SILK_TOUCH, &Enchant::SMITE, &Enchant::SWEEPING_EDGE, &Enchant::THORNS, 
+        &Enchant::AQUA_AFFINITY,
+        &Enchant::BANE_OF_ARTHROPODS,
+        &Enchant::BLAST_PROTECTION,
+        &Enchant::CHANNELING,
+        &Enchant::DEPTH_STRIDER,
+        &Enchant::EFFICIENCY,
+        &Enchant::FEATHER_FALLING,
+        &Enchant::FIRE_ASPECT,
+        &Enchant::FIRE_PROTECTION,
+        &Enchant::FLAME,
+        &Enchant::FORTUNE,
+        &Enchant::IMPALING,
+        &Enchant::INFINITY,
+        &Enchant::KNOCKBACK,
+        &Enchant::LOOTING,
+        &Enchant::LOYALTY,
+        &Enchant::LUCK_OF_THE_SEA,
+        &Enchant::LURE,
+        &Enchant::MULTISHOT,
+        &Enchant::PIERCING,
+        &Enchant::POWER,
+        &Enchant::PROJECTILE_PROTECTION,
+        &Enchant::PROTECTION,
+        &Enchant::PUNCH,
+        &Enchant::QUICK_CHARGE,
+        &Enchant::RESPIRATION,
+        &Enchant::RIPTIDE,
+        &Enchant::SHARPNESS,
+        &Enchant::SILK_TOUCH,
+        &Enchant::SMITE,
+        &Enchant::SWEEPING_EDGE,
+        &Enchant::THORNS,
         &Enchant::UNBREAKING,
     ];
 
@@ -79,7 +105,7 @@ pub fn roll_enchant() -> Option<EnchantOffer> {
 
     let (row, bookshelves) = random_enchantment_setup(&RNG);
     let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + random_cost(&RNG, row, bookshelves);
-    
+
     let mut offers: Vec<(&Enchant, u8)> = Vec::new();
     let mut total_weight: u16 = 0;
     for (i, enc) in ENCHANTS.iter().enumerate() {
@@ -110,7 +136,7 @@ pub fn roll_enchant() -> Option<EnchantOffer> {
 fn random_cost(rng_mutex: &Mutex<SmallRng>, row: u8, bookshelves: u32) -> u32 {
     let mut rng = rng_mutex.lock().unwrap();
     let mut rnd = 1 + (bookshelves >> 1) + bookshelves;
-    rnd = rng.gen_range(rnd..=(rnd + 8));
+    rnd = rng.gen_range(rnd..(rnd + 8));
     match row {
         1 => 1.max(rnd / 3),
         2 => rnd * 2 / 3 + 1,
@@ -119,9 +145,9 @@ fn random_cost(rng_mutex: &Mutex<SmallRng>, row: u8, bookshelves: u32) -> u32 {
 }
 
 /// Get random enchantment table row and random number of bookshelves
-/// 
+///
 /// About 1/25 chance of 15 bookshelves, I think..
-/// 
+///
 /// Twice the chance of getting first or second row than the third row.
 fn random_enchantment_setup(rng_mutex: &Mutex<SmallRng>) -> (u8, u32) {
     let mut rng = rng_mutex.lock().unwrap();
