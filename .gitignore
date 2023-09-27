@@ -1,5 +1,4 @@
 /target
-auth/*
 out.txt
 notes.txt
 people.json
@@ -13,3 +12,14 @@ commands.*
 players.*
 test*
 *.ignore
+
+# Data
+v2_players.json
+
+# Resources
+*.wav
+
+# Auth, environment, etc
+auth/*
+.env
+.spotify_token_cache.json

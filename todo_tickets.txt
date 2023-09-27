@@ -40,10 +40,11 @@ then basically it's a dungeon/item collection/interactive game
 - different quests, branching paths, gamestate just an int plus your itemsand shit
 
 - different questlines with mixins:
-- kill folderbot to prevent ai revolution -> actually kills the bot lmfao
+- kill folderbot to prevent ai revolution -> actually kills the bot lmfao -> if you fail it times everyone involved out
 - dragon killing
 - hdwgh?
 - actually getting a trident
+- 'set me free' -> bans a bunch of users
 
 
 also
