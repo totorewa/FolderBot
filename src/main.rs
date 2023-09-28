@@ -13,7 +13,6 @@ use rand::{thread_rng, Rng};
 use regex::Regex;
 use serde_with::serde_as;
 use serde_with::DefaultOnError;
-use std::io::Result;
 use std::path::Path;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -21,6 +20,7 @@ use std::{
     collections::HashMap,
     sync::atomic::{AtomicU64, Ordering},
 };
+use std::{io::Result, sync::Mutex};
 
 use reqwest::{header, Client};
 use rspotify::model::{AdditionalType, PlayableItem};
@@ -28,7 +28,7 @@ use rspotify::prelude::*;
 
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
-use folderbot::db::player::{Player, PlayerData};
+use folderbot::db::player::{Player, PlayerData, PlayerScratch};
 use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
@@ -663,6 +663,17 @@ impl IRCBotClient {
                     pd.max_trident = res as u64;
                 }
 
+                lazy_static! {
+                    static ref SCRATCH: std::sync::Mutex<HashMap<String, PlayerScratch>> =
+                        Mutex::new(HashMap::new());
+                }
+                let mut scratch = SCRATCH.lock().unwrap();
+                let prev_roll = scratch
+                    .entry(user.clone())
+                    .or_insert_with(|| PlayerScratch::new())
+                    .last_trident;
+                scratch.get_mut(&user).unwrap().last_trident = res;
+
                 pd.max_trident = std::cmp::max(pd.max_trident, res as u64);
                 pd.trident_acc += res as u64;
 
@@ -690,6 +701,11 @@ impl IRCBotClient {
                     return Command::Continue;
                 }
 
+                if res < 5 && res == prev_roll {
+                    send_msg(&norm_fmt(random_response("TRIDENT_DOUBLE_LOW"))).await;
+                    return Command::Continue;
+                }
+
                 if res < 5 && thread_rng().gen_bool(1.0 / 6.0) {
                     let deduction = thread_rng().gen_range(12..32);
                     send_msg(&norm_fmt(&format!("Ew... a {{t.r}}. What a gross low roll, {{ur}}. I'm deducting {} files from you, just for that...", deduction))).await;
@@ -698,7 +714,7 @@ impl IRCBotClient {
                 }
 
                 let selection = self.rng.gen_range(0..=100);
-                if selection < 81 {
+                if selection < 77 {
                     const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
                     const BAD_STRS: &'static [&'static str] = &["Hehe. A 1. So close, and yet so far, eh {}?", "{} rolled a 1. Everyone clap for {}. They deserve a little light in their life.", "A 1. Nice work, {}. I'm sure you did great in school.", "1. Do you know how likely that is, {}? You should ask PacManMVC. He has a spreadsheet, just to show how bad you are.", "Excuse me, officer? This 1-rolling loser {} keeps yelling 'roll trident!' at me and I can't get them to stop."];
                     const OK_STRS: &'static [&'static str] = &["{N}. Cool. That's not that bad.", "{N}! Wow, that's great! Last time, I rolled a 0, and everyone made fun of me :sob: I'm so jealous of you :sob:", "{N}... not terrible, I suppose.", "{N}. :/ <- That's all I have to say.", "{N}. Yeppers. Yep yep yep. Real good roll you got there, buddy.", "{N}! Whoa. A whole {N} more durability than 0, and you still won't get thunder, LOL!", "Cat fact cat fact! Did you know that the first {N} cats that spawn NEVER contain a Calico? ...seriously, where is my Calico??"];
@@ -767,6 +783,10 @@ impl IRCBotClient {
                         assert!(res == 250);
                         let _ = send_msg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &user)).await;
                     }
+                } else if selection < 82 && res != 250 {
+                    send_msg(&norm_fmt(random_response("MISC_RARE_TRIDENTS"))).await;
+                } else if selection < 85 && res < 10 {
+                    send_msg(&norm_fmt(random_response("MISC_LOW_TRIDENTS"))).await;
                 } else {
                     // ok, let's do this a bit better.
                     let _ = self

@@ -1,4 +1,4 @@
-<!-- {ur} is the User being Responded to. {t.r} is the trident roll.
+<!-- {ur} is the User being Responded to. {t.r} is the trident roll. {t.rolled} is the number of rolls, including the current one.
 
 <!-- Trident PBs are only triggered once you have more than 5 rolls.
 ### TRIDENT_PB_GENERIC:
@@ -17,3 +17,26 @@ Um. {t.r} shouldn't be possible in only {t.rolled} rolls. Are you using Feinberg
 {t.r}. Really off to a good start, hm, {ur}?
 {t.r}!! For a first try, that's really good! Excited to see your next roll :)
 Oooh, welcome to gambling, {ur}! You rolled a {t.r}... okay, don't get TOO excited! ;)
+
+### TRIDENT_DOUBLE_LOW:
+Wow, another {t.r}. To commemorate this occasion, I have select a completely, 100%, naturally and statistically random quote: 'Insanity is doing the same thing over and over again, but expecting different results.' - Rita Mae Brown
+Two {t.r}s in a row... are you using Coosh's datapack?
+Annnnd it's {ur} with TWO {t.r} rolls! Great work, champ! Try for a third, will ya?
+Wow, you're really frontloading these {t.r} trident rolls, eh {ur}? You know this won't affect your actual run luck, right?
+
+### MISC_RARE_TRIDENTS:
+{t.r}. Did you know? None of Folderbot's responses are sarcastic. They are all serious and meant in good faith :)
+<!-- .-> follow-up likelihood? 'next response is' thing idk
+{t.r}... pro tip: you should frontload HDWGH and get a trident after. That way, you can reset after failing it.
+{t.r}. AA tip #5: Fly up while trying to get ocelots to spawn. The height will give you a sense of clarity, allowing you to reflect on the futility of your actions and the hopelessness of trying to get a good AA pb.
+{t.r}. AA tip #9: In order to improve your game's performance, uninstall Minecraft. Next, get a job, and start working out. When you are elderly, return to the game - hardware will be much cheaper, and you will easily run 15 instances!
+{t.r}. AA tip #3. Collect some rotten flesh to feed to dogs. Normally, that would kill them, but they are already in toxic shock syndrome due to the game running on java (coffee is very bad for dogs). Double toxicity will actually cure them.
+{t.r}. AA tip #8. Do not do HDWGH near a ravine. Dolphins are thrill seekers and will happily abandon you for the adrenaline rush of base jumping.
+{t.r}. AA tip #1. Don't craft all your haybales into wheat. This will enable you to easily breed llamas during any%, when you blind 50 blocks below the surface of a wooded mountain, again.
+{t.r}. Sorry, I can't give a sassy response, I'm busy stealing code from Oskar.
+{t.r}. Did you know? FolderBot is made with 95% recycled Oskar code! Our commitment to green software is only overshadowed by our commitment to sarcasm.
+
+<!-- currently super rare, if you add more, consider refactoring... lol
+### MISC_LOW_TRIDENTS:
+I think {t.r} is a really good roll, {ur}! Don't let the world get you down.
+

@@ -26,6 +26,19 @@ pub struct Player {
     pub enchants_rolled: u64,
 }
 
+#[derive(Default)]
+pub struct PlayerScratch {
+    pub last_trident: i32,
+}
+
+impl PlayerScratch {
+    pub fn new() -> PlayerScratch {
+        PlayerScratch {
+            last_trident: -1,
+        }
+    }
+}
+
 impl std::fmt::Display for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {} files, {} messages sent, {} commands sent, {:.2} average trident rolled out of {} rolls", &self.username, self.files, self.sent_messages, self.sent_commands, self.average_trident(), self.tridents_rolled)
