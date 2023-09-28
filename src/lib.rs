@@ -6,3 +6,4 @@ pub mod responses;
 pub mod enchants;
 pub mod spotify;
 pub mod db;
+pub mod trident;

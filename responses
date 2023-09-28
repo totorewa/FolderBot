@@ -1,0 +1,19 @@
+<!-- {ur} is the User being Responded to. {t.r} is the trident roll.
+
+<!-- Trident PBs are only triggered once you have more than 5 rolls.
+### TRIDENT_PB_GENERIC:
+Wow, congratulations on your brand new trident PB of {t.r}, {ur}! Be sure to share this on social media, with your surely countless friends!
+(checks notes) well, will you look at that, {t.r} is your best roll ever, {ur}. Fording a new frontier, surely.
+Incredible!!! {ur}, great work on your {t.r}!
+
+<!-- Other information that is provided to these strings: # of tridents rolled so far ({t.rolled})
+### EARLY_HIGH_TRIDENT:
+{t.r}. Wait, {t.r}? After only {t.rolled} trident rolls?! {ur}... you're hired.
+{t.r} already... monkaS
+Um. {t.r} shouldn't be possible in only {t.rolled} rolls. Are you using Feinberg's datapack?
+
+<!-- lol
+### FIRST_TRIDENT_GENERIC:
+{t.r}. Really off to a good start, hm, {ur}?
+{t.r}!! For a first try, that's really good! Excited to see your next roll :)
+Oooh, welcome to gambling, {ur}! You rolled a {t.r}... okay, don't get TOO excited! ;)

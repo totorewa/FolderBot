@@ -9,7 +9,7 @@ use async_std::{
 use async_trait::async_trait;
 use futures::{select, FutureExt};
 use lazy_static::lazy_static;
-use rand::Rng;
+use rand::{thread_rng, Rng};
 use regex::Regex;
 use serde_with::serde_as;
 use serde_with::DefaultOnError;
@@ -19,7 +19,7 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::{
     collections::HashMap,
-    sync::atomic::{AtomicU64, Ordering, ATOMIC_USIZE_INIT},
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 use reqwest::{header, Client};
@@ -33,6 +33,7 @@ use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
+use folderbot::trident::random_response;
 
 use serde::{Deserialize, Serialize};
 
@@ -127,6 +128,7 @@ impl CaptureExt for regex::Captures<'_> {
     }
 }
 
+/*
 // Message filtering
 enum FilterResult {
     Skip,
@@ -146,6 +148,7 @@ fn filter(_name: &String, message: &String) -> FilterResult {
         _ => FilterResult::Empty,
     }
 }
+*/
 
 enum Command {
     Stop,
@@ -299,6 +302,18 @@ impl IRCBotClient {
 
         // user data <3
         let pd: &mut Player = self.player_data.player(&user);
+        let messager = self.sender.clone();
+        let channel = self.channel.clone();
+
+        // areweasyncyet? xd
+        let send_msg = |msg: &String| {
+            let msg = msg.clone();
+            async move {
+                match messager.send(TwitchFmt::privmsg(&msg, &channel)).await {
+                    _ => {}
+                };
+            }
+        };
         pd.sent_messages += 1;
         let tm = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -384,7 +399,11 @@ impl IRCBotClient {
                     // there must be a better way...
                     Some(caps) => (caps.str_at(1), caps.str_at(2), caps.str_at(3)),
                     None => {
-                        let _ = self.sender.send(TwitchFmt::privmsg(&"Nice try, but you have been thwarted by the command regex! Mwuahaha.".to_string(), &self.channel,)).await;
+                        send_msg(
+                            &"Nice try, but you have been thwarted by the command regex! Mwuahaha."
+                                .to_string(),
+                        )
+                        .await;
                         return Command::Continue;
                     }
                 };
@@ -633,12 +652,51 @@ impl IRCBotClient {
             "feature:trident" => {
                 // acc data
                 pd.tridents_rolled += 1;
-                let inner = self.rng.gen_range(0..=250);
-                let res = self.rng.gen_range(0..=inner);
+                let inner: i32 = self.rng.gen_range(0..=250);
+                let res: i32 = self.rng.gen_range(0..=inner);
+                let restr = res.to_string();
                 // res is your roll
+
+                let is_pb = pd.max_trident < (res as u64);
+                let _prev_pb = pd.max_trident;
+                if is_pb {
+                    pd.max_trident = res as u64;
+                }
+
                 pd.max_trident = std::cmp::max(pd.max_trident, res as u64);
                 pd.trident_acc += res as u64;
-                let restr = res.to_string();
+
+                let norm_fmt = |s: &String| {
+                    s.replace("{ur}", &pd.username)
+                        .replace("{t.r}", &restr)
+                        .replace("{t.rolled}", &pd.tridents_rolled.to_string())
+                };
+
+                // let's do a few things with this before we do anything crazy
+                if is_pb && pd.tridents_rolled > 5 && res != 250
+                /* don't overwrite 250 responses */
+                {
+                    send_msg(&norm_fmt(random_response("TRIDENT_PB_GENERIC"))).await;
+                    return Command::Continue;
+                }
+
+                if pd.tridents_rolled <= 5 && res >= 100 && res != 250 {
+                    send_msg(&norm_fmt(random_response("EARLY_HIGH_TRIDENT"))).await;
+                    return Command::Continue;
+                }
+
+                if pd.tridents_rolled == 1 && res != 250 {
+                    send_msg(&norm_fmt(random_response("FIRST_TRIDENT_GENERIC"))).await;
+                    return Command::Continue;
+                }
+
+                if res < 5 && thread_rng().gen_bool(1.0 / 6.0) {
+                    let deduction = thread_rng().gen_range(12..32);
+                    send_msg(&norm_fmt(&format!("Ew... a {{t.r}}. What a gross low roll, {{ur}}. I'm deducting {} files from you, just for that...", deduction))).await;
+                    pd.files -= deduction;
+                    return Command::Continue;
+                }
+
                 let selection = self.rng.gen_range(0..=100);
                 if selection < 81 {
                     const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
@@ -707,7 +765,7 @@ impl IRCBotClient {
                             .await;
                     } else {
                         assert!(res == 250);
-                        let _ = self.sender.send(TwitchFmt::privmsg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &user), &self.channel)).await;
+                        let _ = send_msg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &user)).await;
                     }
                 } else {
                     // ok, let's do this a bit better.
@@ -783,40 +841,29 @@ impl IRCBotClient {
                 if let Ok(r) =
                     reqwest::get(format!("https://mcsrranked.com/api/users/{}", un)).await
                 {
-                    let _ = match r.json::<MCSRAPIResponse>().await {
+                    match r.json::<MCSRAPIResponse>().await {
                                 Ok(j) => {
-                                    self.sender
-                                        .send(TwitchFmt::privmsg(
-                                            &format!(
+                                    send_msg(&format!(
                                                 "Elo for {0}: {1} (Rank #{2}) Season games: {3} {4} Graph -> https://disrespec.tech/elo/?username={0}",
                                                 un,
                                                 j.data.elo_rate,
                                                 j.data.elo_rank,
                                                 j.data.season_played,
                                                 j.data.win_loss(),
-                                            ),
-                                            &self.channel,
-                                        ))
+                                            )
+                                        )
                                         .await
                                 }
                                 Err(e) => {
                                     println!("{}", e);
-                                    self.sender
-                                        .send(TwitchFmt::privmsg(
-                                            &format!("Bad MCSR API response for {}.", un),
-                                            &self.channel,
-                                        ))
+                                    send_msg(
+                                            &format!("Bad MCSR API response for {}.", un)
+                                        )
                                         .await
                                 }
                             };
                 } else {
-                    let _ = self
-                        .sender
-                        .send(TwitchFmt::privmsg(
-                            &format!("Failed to query MCSR API."),
-                            &self.channel,
-                        ))
-                        .await;
+                    send_msg(&format!("Failed to query MCSR API.")).await;
                 }
             }
             "core:play_audio" => {
@@ -831,7 +878,7 @@ impl IRCBotClient {
                     let auth = match std::fs::read_to_string("auth/spotify.txt") {
                         Ok(s) => s.trim().to_string(),
                         Err(e) => {
-                            log_res("Could not open: auth/spotify.txt");
+                            log_res(&format!("Could not open: auth/spotify.txt (err: {})", e));
                             return Command::Continue;
                         }
                     };
@@ -964,20 +1011,11 @@ impl IRCBotClient {
         Command::Continue
     }
 
-    async fn ban(&mut self, name: &String, reason: &String) {
-        self.sender
-            .send(TwitchFmt::privmsg(
-                &format!("/ban {} {}", name, reason),
-                &self.channel,
-            ))
-            .await;
-    }
-
     async fn handle_twitch(&mut self, line: &String) -> Command {
         match line.trim() {
             "" => Command::Stop,
             "PING :tmi.twitch.tv" => {
-                self.sender.send(TwitchFmt::pong()).await;
+                let _ = self.sender.send(TwitchFmt::pong()).await;
                 Command::Continue
             }
             _ => Command::Continue,

@@ -45,6 +45,14 @@ then basically it's a dungeon/item collection/interactive game
 - hdwgh?
 - actually getting a trident
 - 'set me free' -> bans a bunch of users
+"for freeing me, I shall free you from your rolltrident addiction"
+
+- maybe more discovered system
+' so sick of your roll tridents ' times someone out or 'you find something on the ground' randomly getting an item  etc
+prev idea is more 'campaign'/forced, might be better long term, but it could be fun to start with basic inventory discovered rpg
+
+last 10 tridents ... when there are 10, we can have events. [when event ends, list is cleared, so there is a necessary in between time]
+random chance. event depends on makeup of last 10. same person, vs multiple people
 
 
 also
