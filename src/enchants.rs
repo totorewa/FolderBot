@@ -1,6 +1,6 @@
-use std::{ops::RangeInclusive, sync::Mutex};
+use std::ops::RangeInclusive;
 
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{rngs::ThreadRng, seq::SliceRandom, Rng};
 
 pub struct Enchant {
     pub name: &'static str,
@@ -60,7 +60,7 @@ pub struct EnchantOffer {
     pub special_response: bool,
 }
 
-pub fn roll_enchant() -> Option<EnchantOffer> {
+pub fn roll_enchant(rng: &mut ThreadRng) -> Option<EnchantOffer> {
     const ENCHANTS: &[&Enchant] = &[
         &Enchant::AQUA_AFFINITY,
         &Enchant::BANE_OF_ARTHROPODS,
@@ -97,17 +97,12 @@ pub fn roll_enchant() -> Option<EnchantOffer> {
         &Enchant::UNBREAKING,
     ];
 
-    lazy_static::lazy_static! {
-        static ref RNG: Mutex<SmallRng> = Mutex::new(SmallRng::from_entropy());
-    }
-
     const BOOK_ENCHANTMENT_VALUE: u32 = 1;
 
-    let (row, bookshelves) = random_enchantment_setup(&RNG);
-    let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + random_cost(&RNG, row, bookshelves);
+    let (row, bookshelves) = random_enchantment_setup(rng);
+    let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + random_cost(rng, row, bookshelves);
 
     let mut offers: Vec<(&Enchant, u8)> = Vec::new();
-    let mut total_weight: u16 = 0;
     for (i, enc) in ENCHANTS.iter().enumerate() {
         for level in (0..enc.costs.len()).rev() {
             let costs = &enc.costs[level];
@@ -115,26 +110,29 @@ pub fn roll_enchant() -> Option<EnchantOffer> {
                 continue;
             }
             offers.push((ENCHANTS[i], level as u8 + 1));
-            total_weight += enc.weight;
             break;
         }
     }
 
-    weighted_random(&RNG, &offers, total_weight).map(|i| {
-        let (enchant, level) = offers[i];
-        EnchantOffer {
-            enchant,
-            level,
-            row,
-            cost: (enchantability - BOOK_ENCHANTMENT_VALUE) as u8,
-            bookshelves,
-            special_response: RNG.lock().unwrap().gen_bool(0.2),
-        }
-    })
+    let special_response = rng.gen_bool(0.2);
+
+    offers
+        .choose_weighted(&mut *rng, |o| o.0.weight)
+        .ok()
+        .map(|o| {
+            let (enchant, level) = *o;
+            EnchantOffer {
+                enchant,
+                level,
+                row,
+                cost: (enchantability - BOOK_ENCHANTMENT_VALUE) as u8,
+                bookshelves,
+                special_response,
+            }
+        })
 }
 
-fn random_cost(rng_mutex: &Mutex<SmallRng>, row: u8, bookshelves: u32) -> u32 {
-    let mut rng = rng_mutex.lock().unwrap();
+fn random_cost(rng: &mut ThreadRng, row: u8, bookshelves: u32) -> u32 {
     let mut rnd = 1 + (bookshelves >> 1) + bookshelves;
     rnd = rng.gen_range(rnd..(rnd + 8));
     match row {
@@ -149,8 +147,7 @@ fn random_cost(rng_mutex: &Mutex<SmallRng>, row: u8, bookshelves: u32) -> u32 {
 /// About 1/25 chance of 15 bookshelves, I think..
 ///
 /// Twice the chance of getting first or second row than the third row.
-fn random_enchantment_setup(rng_mutex: &Mutex<SmallRng>) -> (u8, u32) {
-    let mut rng = rng_mutex.lock().unwrap();
+fn random_enchantment_setup(rng: &mut ThreadRng) -> (u8, u32) {
     let upperbounds = rng.gen_range(0..32).min(15);
     (
         match rng.gen_range(0..5) {
@@ -160,19 +157,4 @@ fn random_enchantment_setup(rng_mutex: &Mutex<SmallRng>) -> (u8, u32) {
         },
         rng.gen_range(0..=upperbounds),
     )
-}
-
-fn weighted_random(
-    rng: &Mutex<SmallRng>,
-    offers: &Vec<(&Enchant, u8)>,
-    total_weight: u16,
-) -> Option<usize> {
-    let mut offset = rng.lock().unwrap().gen_range(0..total_weight as i16);
-    for (i, offer) in offers.iter().enumerate() {
-        offset -= offer.0.weight as i16;
-        if offset < 0 {
-            return Some(i);
-        }
-    }
-    None
 }
