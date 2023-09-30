@@ -22,6 +22,7 @@ pub struct Player {
     pub trident_acc: u64,
     pub max_trident: u64,
     pub tridents_rolled: u64,
+    #[serde(default)]
     pub rolled_250s: u32,
 
     // Enchant metadata
