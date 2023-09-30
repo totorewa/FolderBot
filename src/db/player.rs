@@ -10,7 +10,7 @@ pub struct Player {
     // Basic player metadata
     pub username: String,
     pub nick: Option<String>,
-    pub files: i64, // player's currency
+    pub files: i64,        // player's currency
     pub last_message: u64, // last message time THAT ADDED FILES.
 
     // Tracking metadata :)
@@ -34,15 +34,13 @@ pub struct PlayerScratch {
 
 impl PlayerScratch {
     pub fn new() -> PlayerScratch {
-        PlayerScratch {
-            last_trident: -1,
-        }
+        PlayerScratch { last_trident: -1 }
     }
 }
 
 impl std::fmt::Display for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {} files, {} messages sent, {} commands sent, {:.2} average trident rolled out of {} rolls", &self.username, self.files, self.sent_messages, self.sent_commands, self.average_trident(), self.tridents_rolled)
+        write!(f, "{} ({}): {} files, {} messages sent, {} commands sent, {:.2} average trident rolled out of {} rolls", &self.name(), &self.username, self.files, self.sent_messages, self.sent_commands, self.average_trident(), self.tridents_rolled)
     }
 }
 
@@ -60,8 +58,11 @@ impl Player {
     }
 
     pub fn average_trident(&self) -> f64 {
-        if self.tridents_rolled == 0 { 0.0 }
-        else { self.trident_acc as f64 / self.tridents_rolled as f64 }
+        if self.tridents_rolled == 0 {
+            0.0
+        } else {
+            self.trident_acc as f64 / self.tridents_rolled as f64
+        }
     }
 
     pub fn name(&self) -> String {
@@ -81,20 +82,24 @@ impl PlayerData {
     }
 
     pub fn player(&mut self, name: &String) -> &mut Player {
-        self.players.entry(name.clone()).or_insert_with(|| Player::new(name.clone()))
+        self.players
+            .entry(name.clone())
+            .or_insert_with(|| Player::new(name.clone()))
     }
 
     pub fn player_or(&mut self, name: &String, other_name: &String) -> &mut Player {
         if self.players.contains_key(name) {
             self.player(name)
-        }
-        else {
+        } else {
             self.player(other_name)
         }
     }
 
     pub fn leaderboard(&self) -> String {
-        let itr = self.players.iter().sorted_by(|a, b| Ord::cmp(&b.1.max_trident, &a.1.max_trident));
+        let itr = self
+            .players
+            .iter()
+            .sorted_by(|a, b| Ord::cmp(&b.1.max_trident, &a.1.max_trident));
         let mut lb = std::vec::Vec::new();
         for (u, d) in itr.take(5) {
             lb.push(format!("{}: {}", &u, d.max_trident));
