@@ -750,6 +750,12 @@ impl IRCBotClient {
                     return Command::Continue;
                 }
 
+                if res < 66 && user == "pacmanmvc" && thread_rng().gen_bool(1.0 / 10.0) {
+                    let delta = 66 - res;
+                    send_msg(&norm_fmt(&format!("{{t.r}}. Ouch. Just {delta} more, and you could have finished the TAS with that, eh \"Pac\" man? Whatever that means..."))).await;
+                    return Command::Continue;
+                }
+
                 let selection = self.rng.gen_range(0..=100);
                 if selection < 77 {
                     const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
