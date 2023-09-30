@@ -856,7 +856,7 @@ impl IRCBotClient {
                 if args.len() > 0 {
                     pd.nick = Some(args);
                 }
-                send_msg(random_response("NICK_SET")).await;
+                send_msg(&random_response("NICK_SET").replace("{ur}", &pd.name())).await;
                 return Command::Continue;
             }
             "admin:nick" => {
