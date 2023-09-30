@@ -57,6 +57,15 @@ impl PlayerScratch {
         }
         false
     }
+
+    pub fn try_greet(&mut self) -> bool {
+        if self.greeted {
+            false
+        } else {
+            self.greeted = true;
+            true
+        }
+    }
 }
 
 impl std::fmt::Display for Player {

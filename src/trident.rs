@@ -58,9 +58,17 @@ impl ResponseDB {
     }
 }
 
-pub fn random_response(key: &str) -> &String {
+fn get_db() -> &'static ResponseDB {
     lazy_static! {
         static ref DB: ResponseDB = ResponseDB::from_db("responses");
     }
-    DB.get(key).choose(&mut rand::thread_rng()).unwrap()
+    &DB
+}
+
+pub fn random_response(key: &str) -> &String {
+    get_db().get(key).choose(&mut rand::thread_rng()).unwrap()
+}
+
+pub fn has_responses(key: &str) -> bool {
+    get_db().responses.contains_key(key)
 }

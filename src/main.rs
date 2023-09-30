@@ -33,7 +33,7 @@ use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
-use folderbot::trident::random_response;
+use folderbot::trident::{random_response, has_responses};
 
 use serde::{Deserialize, Serialize};
 
@@ -304,6 +304,12 @@ impl IRCBotClient {
         let pd: &mut Player = self.player_data.player(&user);
         let messager = self.sender.clone();
         let channel = self.channel.clone();
+        lazy_static! {
+            static ref SCRATCH: std::sync::Mutex<HashMap<String, PlayerScratch>> =
+                Mutex::new(HashMap::new());
+        }
+        let mut scratch = SCRATCH.lock().unwrap();
+        // ensure this player exists
 
         // areweasyncyet? xd
         let send_msg = |msg: &String| {
@@ -339,6 +345,21 @@ impl IRCBotClient {
             Some(x) => x,
             None => {
                 log_res("Skipped as no match was found.");
+
+                // Maybe greet.
+                if scratch.entry(user.clone()).or_insert_with(|| PlayerScratch::new()).try_greet() {
+                    // Generic greets only for now. Later, custom greets per player.
+                    // Ok, maybe we can do some custom greets.
+                    let ug = format!("USER_GREET_{}", &user);
+                    if has_responses(&ug) {
+                        send_msg(&random_response(&ug).replace("{ur}", &pd.name())).await;
+                    }
+                    else {
+                        if thread_rng().gen_bool(1.0 / 3.0) {
+                            send_msg(&random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name())).await;
+                        }
+                    }
+                }
                 return Command::Continue; // Not a valid command
             }
         };
@@ -671,11 +692,6 @@ impl IRCBotClient {
                     pd.max_trident = res as u64;
                 }
 
-                lazy_static! {
-                    static ref SCRATCH: std::sync::Mutex<HashMap<String, PlayerScratch>> =
-                        Mutex::new(HashMap::new());
-                }
-                let mut scratch = SCRATCH.lock().unwrap();
                 let prev_roll = scratch
                     .entry(user.clone())
                     .or_insert_with(|| PlayerScratch::new())
