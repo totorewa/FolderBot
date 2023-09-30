@@ -652,7 +652,16 @@ impl IRCBotClient {
                 // acc data
                 pd.tridents_rolled += 1;
                 let inner: i32 = self.rng.gen_range(0..=250);
-                let res: i32 = self.rng.gen_range(0..=inner);
+                let res: i32 = {
+                    let mut inner_res = self.rng.gen_range(0..=inner);
+                    if user == "desktopfolder" && args.len() > 0 {
+                        if let Ok(real_res) = args.parse::<i32>() {
+                            inner_res = real_res;
+                        }
+                    }
+                    inner_res
+                };
+                
                 let restr = res.to_string();
                 // res is your roll
 
@@ -676,32 +685,45 @@ impl IRCBotClient {
                 pd.max_trident = std::cmp::max(pd.max_trident, res as u64);
                 pd.trident_acc += res as u64;
 
+                let name = pd.name();
                 let norm_fmt = |s: &String| {
-                    s.replace("{ur}", &pd.name())
+                    s.replace("{ur}", &name)
                         .replace("{t.r}", &restr)
                         .replace("{t.rolled}", &pd.tridents_rolled.to_string())
                 };
 
+                // SPECIFIC ROLLS - DO THESE FIRST, ALWAYS. It's just 250, lol.
+                if res == 250 {
+                    pd.rolled_250s += 1;
+                    send_msg(&norm_fmt(random_response("TRIDENT_VALUE_250"))).await;
+                    return Command::Continue;
+                }
+
                 // let's do a few things with this before we do anything crazy
-                if is_pb && pd.tridents_rolled > 5 && res != 250
+                if is_pb && pd.tridents_rolled > 5
                 /* don't overwrite 250 responses */
                 {
                     send_msg(&norm_fmt(random_response("TRIDENT_PB_GENERIC"))).await;
                     return Command::Continue;
                 }
 
-                if pd.tridents_rolled <= 5 && res >= 100 && res != 250 {
+                if pd.tridents_rolled <= 5 && res >= 100 {
                     send_msg(&norm_fmt(random_response("EARLY_HIGH_TRIDENT"))).await;
                     return Command::Continue;
                 }
 
-                if pd.tridents_rolled == 1 && res != 250 {
+                if pd.tridents_rolled == 1 {
                     send_msg(&norm_fmt(random_response("FIRST_TRIDENT_GENERIC"))).await;
                     return Command::Continue;
                 }
 
                 if res < 5 && res == prev_roll {
                     send_msg(&norm_fmt(random_response("TRIDENT_DOUBLE_LOW"))).await;
+                    return Command::Continue;
+                }
+
+                if scratch.get_mut(&user).unwrap().try_dent() {
+                    send_msg(&norm_fmt(random_response("TRIDENT_RATELIMIT_RESPONSE"))).await;
                     return Command::Continue;
                 }
 

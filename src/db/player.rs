@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::time::{Duration, UNIX_EPOCH};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Player {
@@ -21,6 +22,7 @@ pub struct Player {
     pub trident_acc: u64,
     pub max_trident: u64,
     pub tridents_rolled: u64,
+    pub rolled_250s: u32,
 
     // Enchant metadata
     #[serde(default)]
@@ -30,11 +32,29 @@ pub struct Player {
 #[derive(Default)]
 pub struct PlayerScratch {
     pub last_trident: i32,
+    pub greeted: bool,
+    pub trident_response_timer: u64,
 }
 
 impl PlayerScratch {
     pub fn new() -> PlayerScratch {
-        PlayerScratch { last_trident: -1 }
+        PlayerScratch {
+            last_trident: -1,
+            greeted: false,
+            trident_response_timer: 0,
+        }
+    }
+
+    pub fn try_dent(&mut self) -> bool {
+        let cur = std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs();
+        if cur > self.trident_response_timer + 1 {
+            self.trident_response_timer = cur;
+            return true;
+        }
+        false
     }
 }
 

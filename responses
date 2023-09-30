@@ -37,9 +37,31 @@ Wow, you're really frontloading these {t.r} trident rolls, eh {ur}? You know thi
 {t.r}. Did you know? FolderBot is made with 95% recycled Oskar code! Our commitment to green software is only overshadowed by our commitment to sarcasm.
 {t.r} deaths during debris split...
 
+### TRIDENT_VALUE_250:
+{t.r}. You've finally done it, {ur}. You've - you've finally done it. I'm speechless.
+It's... I can't say it. Should I say it? CAN I say it? ...you rolled a {t.r}, {ur}. You actually did it.
+{t.r}. {t.r}. {t.r}. You're a legend, {ur}.
+{t.r}. I can't believe my eyes. For your great accomplishment, {ur}, I shall bestow upon you this token: PagMan
+You did it, {ur}! You rolled a perfect {t.r}! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!
+{ur}! You rolled a {t.r}!! Just kidding. No, I wasn't kidding, this was a reverse bait. This is actually a (very) rare 250 response. Trust me.
+I hereby certify that {ur} has rolled a natural {t.r}. A moment of silence, please.
+
 <!-- currently super rare, if you add more, consider refactoring... lol
 ### MISC_LOW_TRIDENTS:
 I think {t.r} is a really good roll, {ur}! Don't let the world get you down.
+Um, {t.r}. That's, er. That's nice, {ur}... that's really nice.
+
+### TRIDENT_RATELIMIT_RESPONSE:
+{t.r}.
+{t.r} :)
+{t.r}...
+{t.r}!
+{t.r} :/
+{t.r} ^^
+{t.r} :(
+{t.r} ><
+{t.r} monkaS
+{t.r} YEP
 
 ### NICK_SET:
 Ok, "{ur}"... ok.
