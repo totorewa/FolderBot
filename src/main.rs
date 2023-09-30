@@ -722,7 +722,7 @@ impl IRCBotClient {
                     return Command::Continue;
                 }
 
-                if scratch.get_mut(&user).unwrap().try_dent() {
+                if !scratch.get_mut(&user).unwrap().try_dent() {
                     send_msg(&norm_fmt(random_response("TRIDENT_RATELIMIT_RESPONSE"))).await;
                     return Command::Continue;
                 }
