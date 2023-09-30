@@ -342,13 +342,12 @@ impl IRCBotClient {
                 return Command::Continue; // Not a valid command
             }
         };
-
-        pd.sent_commands += 1;
-
         if prefix != node.prefix && !(prefix == "" && node.prefix == "^") {
             log_res("Skipped as prefix does not match.");
             return Command::Continue;
         }
+
+        pd.sent_commands += 1;
 
         let args = cmd;
         println!("Arguments being returned -> '{}'", args);
@@ -678,7 +677,7 @@ impl IRCBotClient {
                 pd.trident_acc += res as u64;
 
                 let norm_fmt = |s: &String| {
-                    s.replace("{ur}", &pd.username)
+                    s.replace("{ur}", &pd.name())
                         .replace("{t.r}", &restr)
                         .replace("{t.rolled}", &pd.tridents_rolled.to_string())
                 };
@@ -725,7 +724,7 @@ impl IRCBotClient {
                             .sender
                             .send(TwitchFmt::privmsg(
                                 &LOSER_STRS[self.rng.gen_range(0..LOSER_STRS.len())]
-                                    .replace("{}", &user),
+                                    .replace("{}", &pd.name()),
                                 &self.channel,
                             ))
                             .await;
@@ -741,7 +740,7 @@ impl IRCBotClient {
                             .sender
                             .send(TwitchFmt::privmsg(
                                 &BAD_STRS[self.rng.gen_range(0..BAD_STRS.len())]
-                                    .replace("{}", &user),
+                                    .replace("{}", &pd.name()),
                                 &self.channel,
                             ))
                             .await;
@@ -781,7 +780,7 @@ impl IRCBotClient {
                             .await;
                     } else {
                         assert!(res == 250);
-                        let _ = send_msg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &user)).await;
+                        let _ = send_msg(&format!("You did it, {}! You rolled a perfect 250! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!", &pd.name())).await;
                     }
                 } else if selection < 82 && res != 250 {
                     send_msg(&norm_fmt(random_response("MISC_RARE_TRIDENTS"))).await;
@@ -792,7 +791,7 @@ impl IRCBotClient {
                     let _ = self
                         .sender
                         .send(TwitchFmt::privmsg(
-                            &rare_trident(res, self.rng.gen_range(0..=4096), &user),
+                            &rare_trident(res, self.rng.gen_range(0..=4096), &pd.name()),
                             &self.channel,
                         ))
                         .await;
@@ -824,7 +823,7 @@ impl IRCBotClient {
                                 .replace("{2}", &offer.cost.to_string())
                                 .replace("{3}", &offer.bookshelves.to_string())
                                 .replace("{4}", if offer.bookshelves == 1 { "f" } else { "ves" })
-                                .replace("{5}", &user)
+                                .replace("{5}", &pd.name())
                         } else {
                             format!(
                                 "You rolled {0} {1} for {2} levels with {3} bookshel{4}!",
@@ -851,6 +850,25 @@ impl IRCBotClient {
                             .await;
                     }
                 }
+            }
+            "feature:nick" => {
+                log_res("Setting nick");
+                if args.len() > 0 {
+                    let _ = pd.nick.insert(args);
+                }
+                send_msg(random_response("NICK_SET")).await;
+                return Command::Continue;
+            }
+            "admin:nick" => {
+                log_res("Setting nick (admin)");
+                let v: Vec<&str> = args.splitn(2, "|").collect();
+                if v.len() != 2 {
+                    send_msg(&"Not enough arguments.".to_string()).await;
+                    return Command::Continue;
+                }
+                let pde = self.player_data.player(&v[0].to_string());
+                let _ = pde.nick.insert(v[1].to_string());
+                return Command::Continue;
             }
             "feature:elo" => {
                 log_res("Doing elo things");

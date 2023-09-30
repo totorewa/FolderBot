@@ -9,6 +9,7 @@ use std::path::Path;
 pub struct Player {
     // Basic player metadata
     pub username: String,
+    pub nick: Option<String>,
     pub files: i64, // player's currency
     pub last_message: u64, // last message time THAT ADDED FILES.
 
@@ -61,6 +62,10 @@ impl Player {
     pub fn average_trident(&self) -> f64 {
         if self.tridents_rolled == 0 { 0.0 }
         else { self.trident_acc as f64 / self.tridents_rolled as f64 }
+    }
+
+    pub fn name(&self) -> String {
+        self.nick.clone().unwrap_or(self.username.clone())
     }
 }
 

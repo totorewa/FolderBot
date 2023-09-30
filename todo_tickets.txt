@@ -1,5 +1,8 @@
 # Bunch of things to do asap / during rewrites / etc
 
+- nicks and greets!!
+- refactor, convert to use db loading only
+- responses have a cooldown (2s?) per user ofc
 - File-loadable better trident rolls -> later cause I'm lazy
 - Maybe a response engine with custom handling
 - points, guessing
