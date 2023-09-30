@@ -854,7 +854,7 @@ impl IRCBotClient {
             "feature:nick" => {
                 log_res("Setting nick");
                 if args.len() > 0 {
-                    let _ = pd.nick.insert(args);
+                    pd.nick = Some(args);
                 }
                 send_msg(random_response("NICK_SET")).await;
                 return Command::Continue;
@@ -867,7 +867,7 @@ impl IRCBotClient {
                     return Command::Continue;
                 }
                 let pde = self.player_data.player(&v[0].to_string());
-                let _ = pde.nick.insert(v[1].to_string());
+                pde.nick = Some(v[1].to_string());
                 return Command::Continue;
             }
             "feature:elo" => {
