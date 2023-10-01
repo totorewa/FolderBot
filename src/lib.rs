@@ -5,5 +5,9 @@ pub mod audio;
 pub mod responses;
 pub mod enchants;
 pub mod spotify;
-pub mod db;
 pub mod trident;
+
+// Collect miscellanous command responses.
+pub mod commands;
+
+pub mod db;

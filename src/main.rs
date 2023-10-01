@@ -11,8 +11,6 @@ use futures::{select, FutureExt};
 use lazy_static::lazy_static;
 use rand::{thread_rng, Rng};
 use regex::Regex;
-use serde_with::serde_as;
-use serde_with::DefaultOnError;
 use std::path::Path;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -22,7 +20,6 @@ use std::{
 };
 use std::{io::Result, sync::Mutex};
 
-use reqwest::{header, Client};
 use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
 
@@ -34,22 +31,9 @@ use folderbot::game::Game;
 use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
 use folderbot::trident::{random_response, has_responses};
+use folderbot::commands::mcsr::lookup;
 
 use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Artist {
-    name: String,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct Track {
-    name: String,
-    artists: Vec<Artist>,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct APIResponse {
-    item: Track,
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct MojangAPIResponse {
@@ -57,65 +41,6 @@ struct MojangAPIResponse {
     id: String,
 }
 
-#[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
-struct MCSRRecord {
-    #[serde_as(deserialize_as = "DefaultOnError")]
-    win: f64,
-    #[serde_as(deserialize_as = "DefaultOnError")]
-    lose: f64,
-    #[serde_as(deserialize_as = "DefaultOnError")]
-    draw: f64,
-}
-// USEFUL SERDE DOCS
-// https://serde.rs/enum-representations.html
-#[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
-struct MCSRData {
-    uuid: String,
-    nickname: String,
-    //#[serde_as(deserialize_as = "DefaultOnError")]
-    //badge: i64,
-    elo_rate: i64,
-    elo_rank: i64,
-    created_time: i64,
-    latest_time: i64,
-    total_played: i64,
-    season_played: i64,
-    highest_winstreak: i64,
-    current_winstreak: i64,
-    prev_elo_rate: i64,
-    best_elo_rate: i64,
-    best_record_time: i64,
-    records: HashMap<String, MCSRRecord>,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct MCSRAPIResponse {
-    status: String,
-    data: MCSRData,
-}
-
-impl MCSRData {
-    fn win_loss(&self) -> String {
-        match self.records.get("2") {
-            /*
-            Some(MR) => match (MR.win.parse::<f64>(), MR.lose.parse::<f64>()) {
-                (Ok(w), Ok(l)) => {
-                    format!("[{} - {} ({:.2}%)]", MR.win, MR.lose, w * 100.0 / (l + w))
-                }
-                _ => format!("[{} - {}]", MR.win, MR.lose),
-            },
-            */
-            Some(mcsr_record) => format!(
-                "[{} - {} ({:.2}%)]",
-                mcsr_record.win,
-                mcsr_record.lose,
-                mcsr_record.win * 100.0 / (mcsr_record.lose + mcsr_record.win)
-            ),
-            None => "[No data]".to_string(),
-        }
-    }
-}
 
 // Temporary until I find the correct way to do this.
 trait CaptureExt {
@@ -194,7 +119,6 @@ impl TwitchFmt {
 }
 
 struct IRCBotClient {
-    stream: TcpStream,
     nick: String,
     secret: String,
     reader: BufReader<TcpStream>,
@@ -204,8 +128,6 @@ struct IRCBotClient {
     game: Game,
     audio: Audio,
     autosave: bool,
-    client: Option<Client>,
-    rng: rand::rngs::ThreadRng,
     spotify: SpotifyChecker,
     player_data: PlayerData,
 }
@@ -234,6 +156,10 @@ impl IRCBotMessageSender {
 }
 
 impl IRCBotClient {
+    async fn send_msg(&self, msg: String) {
+        let _ = self.sender.send(TwitchFmt::privmsg(&msg, &self.channel)).await;
+    }
+
     async fn connect(
         nick: String,
         secret: String,
@@ -247,7 +173,6 @@ impl IRCBotClient {
         let (s, r) = async_std::channel::unbounded(); // could use bounded(10) or sth
         (
             IRCBotClient {
-                stream: stream.clone(),
                 nick,
                 secret,
                 reader,
@@ -257,8 +182,6 @@ impl IRCBotClient {
                 game: Game::new(),
                 audio: Audio::new(),
                 autosave: false,
-                client: None,
-                rng: rand::thread_rng(),
                 spotify: SpotifyChecker::new().await,
                 player_data: PlayerData::new(),
             },
@@ -273,11 +196,11 @@ impl IRCBotClient {
 
     async fn authenticate(&mut self) -> () {
         println!("Writing password...");
-        self.stream.send(TwitchFmt::pass(&self.secret)).await;
+        let _ = self.sender.send(TwitchFmt::pass(&self.secret)).await;
         println!("Writing nickname...");
-        self.stream.send(TwitchFmt::nick(&self.nick)).await;
+        let _ = self.sender.send(TwitchFmt::nick(&self.nick)).await;
         println!("Writing join command...");
-        self.stream.send(TwitchFmt::join(&self.channel)).await;
+        let _ = self.sender.send(TwitchFmt::join(&self.channel)).await;
     }
 
     /*
@@ -352,7 +275,8 @@ impl IRCBotClient {
                     // Ok, maybe we can do some custom greets.
                     let ug = format!("USER_GREET_{}", &user);
                     if has_responses(&ug) {
-                        send_msg(&random_response(&ug).replace("{ur}", &pd.name())).await;
+                        let name = pd.name().clone();
+                        self.send_msg(random_response(&ug).replace("{ur}", &name)).await;
                     }
                     else {
                         if thread_rng().gen_bool(1.0 / 3.0) {
@@ -672,9 +596,10 @@ impl IRCBotClient {
             "feature:trident" => {
                 // acc data
                 pd.tridents_rolled += 1;
-                let inner: i32 = self.rng.gen_range(0..=250);
+                let mut rng = thread_rng();
+                let inner: i32 = rng.gen_range(0..=250);
                 let res: i32 = {
-                    let mut inner_res = self.rng.gen_range(0..=inner);
+                    let mut inner_res = rng.gen_range(0..=inner);
                     if user == "desktopfolder" && args.len() > 0 {
                         if let Ok(real_res) = args.parse::<i32>() {
                             inner_res = real_res;
@@ -743,20 +668,20 @@ impl IRCBotClient {
                     return Command::Continue;
                 }
 
-                if res < 5 && thread_rng().gen_bool(1.0 / 6.0) {
-                    let deduction = thread_rng().gen_range(12..32);
+                if res < 5 && rng.gen_bool(1.0 / 6.0) {
+                    let deduction = rng.gen_range(12..32);
                     send_msg(&norm_fmt(&format!("Ew... a {{t.r}}. What a gross low roll, {{ur}}. I'm deducting {} files from you, just for that...", deduction))).await;
                     pd.files -= deduction;
                     return Command::Continue;
                 }
 
-                if res < 66 && user == "pacmanmvc" && thread_rng().gen_bool(1.0 / 10.0) {
+                if res < 66 && user == "pacmanmvc" && rng.gen_bool(1.0 / 10.0) {
                     let delta = 66 - res;
                     send_msg(&norm_fmt(&format!("{{t.r}}. Ouch. Just {delta} more, and you could have finished the TAS with that, eh \"Pac\" man? Whatever that means..."))).await;
                     return Command::Continue;
                 }
 
-                let selection = self.rng.gen_range(0..=100);
+                let selection = rng.gen_range(0..=100);
                 if selection < 77 {
                     const LOSER_STRS: &'static [&'static str] = &["Wow, {} rolled a 0? What a loser!", "A 0... try again later, {} :/", "Oh look here, you rolled a 0. So sad! Alexa, play Despacito :sob:", "You rolled a 0. Everyone: Don't let {} play AA. They don't have the luck - er, skill - for it."];
                     const BAD_STRS: &'static [&'static str] = &["Hehe. A 1. So close, and yet so far, eh {}?", "{} rolled a 1. Everyone clap for {}. They deserve a little light in their life.", "A 1. Nice work, {}. I'm sure you did great in school.", "1. Do you know how likely that is, {}? You should ask PacManMVC. He has a spreadsheet, just to show how bad you are.", "Excuse me, officer? This 1-rolling loser {} keeps yelling 'roll trident!' at me and I can't get them to stop."];
@@ -767,7 +692,7 @@ impl IRCBotClient {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
-                                &LOSER_STRS[self.rng.gen_range(0..LOSER_STRS.len())]
+                                &LOSER_STRS[rng.gen_range(0..LOSER_STRS.len())]
                                     .replace("{}", &pd.name()),
                                 &self.channel,
                             ))
@@ -783,7 +708,7 @@ impl IRCBotClient {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
-                                &BAD_STRS[self.rng.gen_range(0..BAD_STRS.len())]
+                                &BAD_STRS[rng.gen_range(0..BAD_STRS.len())]
                                     .replace("{}", &pd.name()),
                                 &self.channel,
                             ))
@@ -799,7 +724,7 @@ impl IRCBotClient {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
-                                &OK_STRS[self.rng.gen_range(0..OK_STRS.len())]
+                                &OK_STRS[rng.gen_range(0..OK_STRS.len())]
                                     .replace("{N}", &restr),
                                 &self.channel,
                             ))
@@ -808,7 +733,7 @@ impl IRCBotClient {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
-                                &GOOD_STRS[self.rng.gen_range(0..GOOD_STRS.len())]
+                                &GOOD_STRS[rng.gen_range(0..GOOD_STRS.len())]
                                     .replace("{N}", &restr),
                                 &self.channel,
                             ))
@@ -817,7 +742,7 @@ impl IRCBotClient {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
-                                &GREAT_STRS[self.rng.gen_range(0..GREAT_STRS.len())]
+                                &GREAT_STRS[rng.gen_range(0..GREAT_STRS.len())]
                                     .replace("{N}", &restr),
                                 &self.channel,
                             ))
@@ -835,7 +760,7 @@ impl IRCBotClient {
                     let _ = self
                         .sender
                         .send(TwitchFmt::privmsg(
-                            &rare_trident(res, self.rng.gen_range(0..=4096), &pd.name()),
+                            &rare_trident(res, rng.gen_range(0..=4096), &pd.name()),
                             &self.channel,
                         ))
                         .await;
@@ -861,7 +786,7 @@ impl IRCBotClient {
                             } else {
                                 BAD_ROLLS
                             };
-                            resp_list[self.rng.gen_range(0..resp_list.len())]
+                            resp_list[thread_rng().gen_range(0..resp_list.len())]
                                 .replace("{0}", &offer.enchant.name)
                                 .replace("{1}", ROMAN_MAP[offer.level as usize - 1])
                                 .replace("{2}", &offer.cost.to_string())
@@ -916,125 +841,12 @@ impl IRCBotClient {
             }
             "feature:elo" => {
                 log_res("Doing elo things");
-                let un: String = match args.len() {
-                    0..=2 => "DesktopFolder".into(),
-                    _ => args.clone(),
-                };
-                if let Ok(r) =
-                    reqwest::get(format!("https://mcsrranked.com/api/users/{}", un)).await
-                {
-                    match r.json::<MCSRAPIResponse>().await {
-                                Ok(j) => {
-                                    send_msg(&format!(
-                                                "Elo for {0}: {1} (Rank #{2}) Season games: {3} {4} Graph -> https://disrespec.tech/elo/?username={0}",
-                                                un,
-                                                j.data.elo_rate,
-                                                j.data.elo_rank,
-                                                j.data.season_played,
-                                                j.data.win_loss(),
-                                            )
-                                        )
-                                        .await
-                                }
-                                Err(e) => {
-                                    println!("{}", e);
-                                    send_msg(
-                                            &format!("Bad MCSR API response for {}.", un)
-                                        )
-                                        .await
-                                }
-                            };
-                } else {
-                    send_msg(&format!("Failed to query MCSR API.")).await;
-                }
+                self.send_msg(lookup(args).await).await;
+                return Command::Continue;
             }
             "core:play_audio" => {
                 log_res("Tested audio.");
                 self.audio.play();
-            }
-            "core:get_song" => {
-                log_res("Attempting to contact Spotify Web Player...");
-                if let None = self.client {
-                    log_res("Attempting to create Spotify connection...");
-                    let mut headers = header::HeaderMap::new();
-                    let auth = match std::fs::read_to_string("auth/spotify.txt") {
-                        Ok(s) => s.trim().to_string(),
-                        Err(e) => {
-                            log_res(&format!("Could not open: auth/spotify.txt (err: {})", e));
-                            return Command::Continue;
-                        }
-                    };
-
-                    // https://developer.spotify.com/console/get-users-currently-playing-track/
-                    headers.insert(
-                        "Authorization",
-                        header::HeaderValue::try_from(format!("Bearer {}", auth)).unwrap(),
-                    );
-                    headers.insert(
-                        "Accept",
-                        header::HeaderValue::from_static("application/json"),
-                    );
-                    headers.insert(
-                        "Content-Type",
-                        header::HeaderValue::from_static("application/json"),
-                    );
-                    match Client::builder().default_headers(headers).build() {
-                        Ok(try_client) => self.client.insert(try_client),
-                        Err(e) => {
-                            log_res(format!("Encountered error: {:?}", e).as_str());
-                            return Command::Continue;
-                        }
-                    };
-                }
-                match self.client.as_ref() {
-                    Some(spotify) => match spotify
-                        .get("https://api.spotify.com/v1/me/player/currently-playing")
-                        .send()
-                        .await
-                    {
-                        Ok(response) => {
-                            if response.status().is_success() {
-                                match response.json::<APIResponse>().await {
-                                    Ok(parsed) => {
-                                        let artist = match parsed.item.artists.len() {
-                                            0 => "".to_string(),
-                                            _ => format!(" - {}", parsed.item.artists[0].name),
-                                        };
-                                        let _ = self
-                                            .sender
-                                            .send(TwitchFmt::privmsg(
-                                                &format!("{}{}", parsed.item.name, artist),
-                                                &self.channel,
-                                            ))
-                                            .await;
-                                        return Command::Continue;
-                                    }
-                                    Err(_) => {
-                                        return Command::Continue;
-                                    }
-                                }
-                            } else {
-                                let _ = self
-                                    .sender
-                                    .send(TwitchFmt::privmsg(
-                                        &"Failed to get song (bad request).".to_string(),
-                                        &self.channel,
-                                    ))
-                                    .await;
-                            }
-                        }
-                        Err(_) => {
-                            let _ = self
-                                .sender
-                                .send(TwitchFmt::privmsg(
-                                    &"Failed to get song (bad request).".to_string(),
-                                    &self.channel,
-                                ))
-                                .await;
-                        }
-                    },
-                    None => {}
-                }
             }
             "core:functioning_get_song" => {
                 let song_response = self
