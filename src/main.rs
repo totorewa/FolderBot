@@ -268,6 +268,9 @@ impl IRCBotClient {
             prefix = "!".to_string();
         }
 
+        let (cmd_name, _) = cmd.split_at(cmd.find(' ').unwrap_or(cmd.len()));
+        let cmd_name = cmd_name.to_string();
+
         // println!("cmd({}) prefix({})", cmd, prefix);
 
         let node = match self.ct.find(&mut cmd) {
@@ -375,7 +378,7 @@ impl IRCBotClient {
                     self.send_msg(
                         db_random_response("DEAD_COMMAND_ATTEMPT", "deaths")
                             .replace("{ur}", &name)
-                            .replace("{m.com}", ""),
+                            .replace("{m.com}", &cmd_name),
                     )
                     .await;
                     return Command::Continue;
