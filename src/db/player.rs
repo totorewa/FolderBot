@@ -14,6 +14,11 @@ pub struct Player {
     pub files: i64,        // player's currency
     pub last_message: u64, // last message time THAT ADDED FILES.
 
+    // Game metadata
+    pub death: Option<u64>,
+    #[serde(default)]
+    pub deaths: u64,
+
     // Tracking metadata :)
     pub sent_messages: u64,
     pub sent_commands: u64,

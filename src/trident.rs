@@ -58,17 +58,29 @@ impl ResponseDB {
     }
 }
 
-fn get_db() -> &'static ResponseDB {
+fn get_db(key: &'static str) -> &'static ResponseDB {
     lazy_static! {
         static ref DB: ResponseDB = ResponseDB::from_db("responses");
+        static ref DEATHDB: ResponseDB = ResponseDB::from_db("resources/deaths.resp");
     }
-    &DB
+    match key {
+        "main" => &DB,
+        "deaths" => &DEATHDB,
+        _ => panic!("Bad key used: {}", key),
+    }
 }
 
-pub fn random_response(key: &str) -> &String {
-    get_db().get(key).choose(&mut rand::thread_rng()).unwrap()
+pub fn random_response(key: &str) -> &'static String {
+    get_db("main").get(key).choose(&mut rand::thread_rng()).unwrap()
 }
 
 pub fn has_responses(key: &str) -> bool {
-    get_db().responses.contains_key(key)
+    get_db("main").responses.contains_key(key)
+}
+
+pub fn db_random_response(key: &str, dbkey: &'static str) -> &'static String {
+    get_db(dbkey).get(key).choose(&mut rand::thread_rng()).unwrap()
+}
+pub fn db_has_responses(key: &str, dbkey: &'static str) -> bool {
+    get_db(dbkey).responses.contains_key(key)
 }

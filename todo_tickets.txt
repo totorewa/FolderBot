@@ -36,6 +36,9 @@ then basically it's a dungeon/item collection/interactive game
 "what's your !answer?"
 "You roll a 5. Your gambling addiction is so strong now that it only satiates you for - 5, 10 microseconds. You go to roll again, but pause. Is this all you want in life? To roll tridents, day in and day out, over and over? Maybe it's time for an adventure..."
 
+"You may use any skill you have acquired to fight off this beast."
+"Your gambling addiction! Of course, that's how you can win this. Quickly, you pull out your handy CSPRNG that you keep in your backpack. 'This'll just be one second,' you say, waving towards the creature. It grumbles, but does not move forward. Perhaps that is lucky - and luck is what you'll need. You generate the first number: []. Then you plug it in, and generate a second: []. [good, bad]. Alas, your reprieve is over. The orc crushes your skull in a single blow, somehow completely ignoring the draw of spending years generating random numbers."
+
 - collect items
 - use items later (kill dragon with beds?)
 - sound effects - dragon explosions, dragon dying, etc

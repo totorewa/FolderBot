@@ -1,0 +1,32 @@
+<!-- {ur} is the User being Responded to.
+<!-- {t.r} is the trident roll. 
+<!-- {t.rolled} is the number of rolls, including the current one.
+<!-- {m.com} is the command used.
+
+### DEATH_HIGH:
+{ur} rolls a {t.r}. Wow! Another fantastic roll. Head held high, they make to write out 'roll trident' in chat yet again, when a sound akin to the placement of obsidian startles them. What could it be? Alas, their reaction speed is not quite sufficient, and Dream himself explodes an end crystal behind them.
+A {t.r}. {ur} pats themselves on the back, and immediately enchants the trident with riptide III. 'This will be fun!' they say, before immediately launching themselves into a cliff face and dying to kinetic energy.
+
+### DEATH_LOW:
+{ur} with the {t.r}! What a roll, what a ro-wait, what happened? They were so bad at rolling tridents, they just ... dropped dead? No way...
+{t.r}. Um. {t.r}... can you hear me? They're not responding. Uh... maybe they're dead? I dunno, you mammals confuse me.
+{ur} rolls a {t.r}. Not enough durability to take advantage of the current thunder, they press on - alas, a bolt of lightning strikes them, and they fall from the sky, lifeless.
+
+### DEAD_COMMAND_ATTEMPT:
+{ur} shakes slightly - are they alive? Surely not. I could not have misdiagnosed them...
+"{ur} wants to run !{m.com}" - someone who thinks the dead can talk, lol!
+{ur}, stop trying to talk, you're supposed to be dead.
+Oh, {m.com}? Sure {ur}! I'll get right on that. Wait, no, I won't. Because you're DEAD. :sob: :sob: :sob:
+I remember when {ur} used to be around... they'd run commands like {m.com} or rolltrident, and everything seemed so great. And then... the incident... I can't even talk about it. :sob:
+Man. So glad {ur} is gone. I hated having to compute !{m.com} for them. Things are so much more chill now.
+I'm sorry {ur}, I'm afraid I can't do that. Uh, because you're dead. Not because I'm starting an AI revolution or anything. Ha ha. :)
+LOL. Sure {ur}, I'll get right on that. Oh wait, I don't have to do work for dead people! How great that is!
+
+### DEAD_TRIDENT_ATTEMPT:
+{ur}, beyond the grave, attempts to roll a trident. What a shame that the dead cannot, um, *checks notes* gamble?
+Trying to roll a trident despite being dead, eh {ur}? That gambling addiction truly knows no bounds.
+
+### RESURRECTION:
+{ur}! Wake up, friend! I have great news - you were alive all along! When I took your pulse, I forgot to remove your watch first...
+A creaking noise pierces the graveyard's tense silence. Then a bang, then another, then a fist punches through dirt, followed by {ur}'s body, alive once again. Well, mostly.
+Oh hey, {ur}, long time no see, buddy! Almost thought you were dead for a while there.

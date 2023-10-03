@@ -25,13 +25,13 @@ use rspotify::prelude::*;
 
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
+use folderbot::commands::mcsr::lookup;
 use folderbot::db::player::{Player, PlayerData, PlayerScratch};
 use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
-use folderbot::trident::{random_response, has_responses};
-use folderbot::commands::mcsr::lookup;
+use folderbot::trident::{db_random_response, has_responses, random_response};
 
 use serde::{Deserialize, Serialize};
 
@@ -41,6 +41,12 @@ struct MojangAPIResponse {
     id: String,
 }
 
+fn cur_time_or_0() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::from_secs(0))
+        .as_secs()
+}
 
 // Temporary until I find the correct way to do this.
 trait CaptureExt {
@@ -157,7 +163,10 @@ impl IRCBotMessageSender {
 
 impl IRCBotClient {
     async fn send_msg(&self, msg: String) {
-        let _ = self.sender.send(TwitchFmt::privmsg(&msg, &self.channel)).await;
+        let _ = self
+            .sender
+            .send(TwitchFmt::privmsg(&msg, &self.channel))
+            .await;
     }
 
     async fn connect(
@@ -244,10 +253,7 @@ impl IRCBotClient {
             }
         };
         pd.sent_messages += 1;
-        let tm = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0))
-            .as_secs();
+        let tm = cur_time_or_0();
         if tm > (pd.last_message + /* 60s * 15m */ 60 * 15) {
             pd.last_message = tm;
             pd.files += 25;
@@ -270,17 +276,26 @@ impl IRCBotClient {
                 log_res("Skipped as no match was found.");
 
                 // Maybe greet.
-                if scratch.entry(user.clone()).or_insert_with(|| PlayerScratch::new()).try_greet() {
+                if scratch
+                    .entry(user.clone())
+                    .or_insert_with(|| PlayerScratch::new())
+                    .try_greet()
+                {
                     // Generic greets only for now. Later, custom greets per player.
                     // Ok, maybe we can do some custom greets.
                     let ug = format!("USER_GREET_{}", &user);
                     if has_responses(&ug) {
                         let name = pd.name().clone();
-                        self.send_msg(random_response(&ug).replace("{ur}", &name)).await;
-                    }
-                    else {
+                        self.send_msg(random_response(&ug).replace("{ur}", &name))
+                            .await;
+                    } else {
+                        // scale this with messages sent or file count? lol kind of ties back into
+                        // reputation mechanism
                         if thread_rng().gen_bool(1.0 / 3.0) {
-                            send_msg(&random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name())).await;
+                            send_msg(
+                                &random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name()),
+                            )
+                            .await;
                         }
                     }
                 }
@@ -336,6 +351,38 @@ impl IRCBotClient {
         lazy_static! {
             static ref COMMAND_RE: Regex = Regex::new(r"^([^\s\w]?)(.*?)\s+(.+)$").unwrap();
         }
+
+        // lol
+        if let Some(death_time) = pd.death {
+            let name = pd.name();
+            if death_time + 30 + thread_rng().gen_range(0..=270) < cur_time_or_0() {
+                pd.death = None;
+                let _ = self
+                    .sender
+                    .send(TwitchFmt::privmsg(
+                        &(db_random_response("RESURRECTION", "deaths").replace("{ur}", &name)),
+                        &self.channel,
+                    ))
+                    .await;
+            } else {
+                if command == "feature:trident" {
+                    self.send_msg(
+                        db_random_response("DEAD_TRIDENT_ATTEMPT", "deaths").replace("{ur}", &name),
+                    )
+                    .await;
+                    return Command::Continue;
+                } else {
+                    self.send_msg(
+                        db_random_response("DEAD_COMMAND_ATTEMPT", "deaths")
+                            .replace("{ur}", &name)
+                            .replace("{m.com}", ""),
+                    )
+                    .await;
+                    return Command::Continue;
+                }
+            }
+        }
+
         match command.as_str() {
             "meta:insert" | "meta:edit" => {
                 // Let's ... try to get this to work I guess.
@@ -607,7 +654,7 @@ impl IRCBotClient {
                     }
                     inner_res
                 };
-                
+
                 let restr = res.to_string();
                 // res is your roll
 
@@ -675,6 +722,20 @@ impl IRCBotClient {
                     return Command::Continue;
                 }
 
+                if res < 2 && rng.gen_bool(1.0 / 5.0) {
+                    pd.deaths += 1;
+                    pd.death = Some(cur_time_or_0());
+                    send_msg(&norm_fmt(db_random_response("DEATH_LOW", "deaths"))).await;
+                    return Command::Continue;
+                }
+
+                if res > 150 && res < 176 && rng.gen_bool(1.0 / 5.0) {
+                    pd.deaths += 1;
+                    pd.death = Some(cur_time_or_0());
+                    send_msg(&norm_fmt(db_random_response("DEATH_HIGH", "deaths"))).await;
+                    return Command::Continue;
+                }
+
                 if res < 66 && user == "pacmanmvc" && rng.gen_bool(1.0 / 10.0) {
                     let delta = 66 - res;
                     send_msg(&norm_fmt(&format!("{{t.r}}. Ouch. Just {delta} more, and you could have finished the TAS with that, eh \"Pac\" man? Whatever that means..."))).await;
@@ -724,8 +785,7 @@ impl IRCBotClient {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
-                                &OK_STRS[rng.gen_range(0..OK_STRS.len())]
-                                    .replace("{N}", &restr),
+                                &OK_STRS[rng.gen_range(0..OK_STRS.len())].replace("{N}", &restr),
                                 &self.channel,
                             ))
                             .await;
@@ -934,10 +994,7 @@ impl IRCBotClient {
                     // maybe save our game data real quick...
                     static LAST_SAVE: AtomicU64 = AtomicU64::new(0);
 
-                    let tm = SystemTime::now()
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap_or(Duration::from_secs(0))
-                        .as_secs();
+                    let tm = cur_time_or_0();
                     if (LAST_SAVE.load(Ordering::Relaxed) + 60 * 5) < tm {
                         LAST_SAVE.store(tm, Ordering::Relaxed);
                         println!("[Note] Autosaving player data.");
