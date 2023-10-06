@@ -829,6 +829,36 @@ impl IRCBotClient {
                         .await;
                 }
             }
+            "feature:tridentchance" => {
+                let trimmed = args.trim();
+                if trimmed.is_empty() {
+                    return Command::Continue;
+                }
+                match trimmed.parse::<i64>().ok().filter(|n| *n >= 0 && *n <= 250) {
+                    Some(n) => {
+                        const TRIDENT_PERMUTATION_COUNT: f64 = (i64::pow(251, 2) + 251) as f64 / 2.0; // 0-250 inclusive is 251 possible numbers
+                        let chance = (TRIDENT_PERMUTATION_COUNT / (251.0 - (n as f64))).ceil();
+                        if chance == TRIDENT_PERMUTATION_COUNT {
+                            send_msg(&format!("You have a 1 in {} chance of rolling {}.. on the up side, if you round it, you have a 1 in 1 chance of not rolling {} monkaLaugh", chance, n, n)).await;
+                        } else if chance == TRIDENT_PERMUTATION_COUNT / 2.0 {
+                            send_msg(&format!("Rolling {} durability is a 1 in {} chance. Fun fact, you're twice as likely to get this than 250", n, chance)).await;
+                        } else if chance > 10000.0 {
+                            send_msg(&format!("You have a 1 in {} chance of rolling {}. You have more of a chance of getting injured by a toilet OMEGALULiguess", chance, n)).await;
+                        } else if chance > 1000.0 {
+                            send_msg(&format!("You have a 1 in {} chance of {} durability, and yet still better odds than a calico spawning LULW", chance, n)).await;
+                        } else if chance > 500.0 {
+                            send_msg(&format!("It's a 1 in {} chance of rolling {}. Did you know you have a higher chance of being born with an extra finger or toe?", chance, n)).await;
+                        } else if chance > 129.0 {
+                            send_msg(&format!("You have a higher chance of falling to your death than the 1 in {} chance of rolling a {}", chance, n)).await;
+                        } else {
+                            send_msg(&format!("There's a 1 in {} chance of rolling {} durability. It doesn't really get much better than that tbh. If you can't even roll a {} what's the point?", chance, n, n)).await;
+                        }
+                    }
+                    None => {
+                        send_msg(&format!("You might find it difficult to roll a {}, {}... but feel free to try", trimmed, &pd.name())).await;
+                    }
+                }
+            }
             "feature:enchant" => {
                 const ROMAN_MAP: &[&str] = &["I", "II", "III", "IV", "V"];
                 const GREAT_ROLLS: &'static [&'static str] = &["Impressive! You've got yourself a {0} {1} book for {2} levels with {3} bookshel{4}.", "A truly magical outcome! {0} {1} awaits you for {2} levels with {3} bookshel{4}.", "Your enchantment game is strong! {0} {1} for you for the price of {2} levels. Not bad for {3} bookshel{4}.", "Surely you must be RNG-manipulating! I mean, {0} {1} for {2} levels!? I guess it did take {3} bookshel{4} to get."];
