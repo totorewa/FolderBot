@@ -73,6 +73,17 @@ impl PlayerScratch {
     }
 }
 
+fn plural<T>(i: T, s: &str) -> String
+where
+    T: std::fmt::Display + PartialOrd<i64>,
+{
+    if i == 1 {
+        format!("{i} {s}")
+    } else {
+        format!("{i} {s}s")
+    }
+}
+
 impl std::fmt::Display for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = self.name();
@@ -81,8 +92,8 @@ impl std::fmt::Display for Player {
         let coms = self.sent_commands;
         let sent = self.sent_messages - coms;
         let pct = 100.0 * (sent as f64) / (self.sent_messages as f64);
-        write!(f, "{} ({}): {} files, {} deaths. {} messages sent, {} commands sent ({:.0}%). {:.2} average trident rolled out of {} rolls.",
-               name, user, files, self.deaths, sent, coms, pct, self.average_trident(), self.tridents_rolled)
+        write!(f, "{} ({}): {}, {}. {} messages sent, {} commands sent ({:.0}%). {:.2} average trident rolled out of {}.",
+               name, user, plural(files, "file"), plural(self.deaths as i64, "death"), sent, coms, pct, self.average_trident(), plural(self.tridents_rolled as i64, "roll"))
     }
 }
 
