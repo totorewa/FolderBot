@@ -835,7 +835,7 @@ impl IRCBotClient {
                 const GOOD_ROLLS: &'static [&'static str] = &["{0} {1} from {3} bookshel{4}? Not too shabby! Yours for {2} levels.", "A respectable roll! Can't go wrong with {0} {1} for {2} levels with {3} bookshel{4}.", "{0} {1} for {2} levels. Could be worse, lol. I like your {3} bookshel{4}.", "Wow, not bad! {0} {1} for {2} levels with {3} bookshel{4}."];
                 const BAD_ROLLS: &'static [&'static str] = &["{0} {1} for {2} levels? Could be worse, I guess... Might need more than {3} bookshel{4}...", "You rolled {0} {1} for {2} levels with {3} bookshel{4}. Keep trying!", "You rolled {0}! Nice!! Oh wait, its only {0} {1}. Oh well, it's only {2} levels at least. Maybe try using more than {3} bookshel{4} or something."];
                 const TERRIBLE_ROLLS: &'static [&'static str] = &["{0}.. you know what. I can't be bothered telling you the level, it's too embarrassing. Let's just pretend it's a good level.", "Wow.. a {0} {1}.. amazing.. I wouldn't spend {2} levels on that, {5}.", "{0} {1}... zzz... something something {2} levels something {3} bookshel{4} idk I can't be bothered anymore", "Jackpot! You scored a {0} {1}. What are the odds of being that bad?? {2} levels?? Honestly. Get more bookshelves, {3} isn't enough.", "Yeah I'm not saying the response. That's just embarassing, {5}. Almost as embarassing as misspelling embarrassing."];
-                match roll_enchant(&mut self.rng).filter(|o| o.level > 0 && (o.level as usize) < ROMAN_MAP.len())
+                match roll_enchant().filter(|o| o.level > 0 && (o.level as usize) < ROMAN_MAP.len())
                 {
                     Some(offer) => {
                         pd.enchants_rolled += 1;

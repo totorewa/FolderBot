@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use rand::{rngs::ThreadRng, seq::SliceRandom, Rng};
+use rand::{rngs::ThreadRng, seq::SliceRandom, Rng, thread_rng};
 
 pub struct Enchant {
     pub name: &'static str,
@@ -60,7 +60,7 @@ pub struct EnchantOffer {
     pub special_response: bool,
 }
 
-pub fn roll_enchant(rng: &mut ThreadRng) -> Option<EnchantOffer> {
+pub fn roll_enchant() -> Option<EnchantOffer> {
     const ENCHANTS: &[&Enchant] = &[
         &Enchant::AQUA_AFFINITY,
         &Enchant::BANE_OF_ARTHROPODS,
@@ -99,8 +99,9 @@ pub fn roll_enchant(rng: &mut ThreadRng) -> Option<EnchantOffer> {
 
     const BOOK_ENCHANTMENT_VALUE: u32 = 1;
 
-    let (row, bookshelves) = random_enchantment_setup(rng);
-    let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + random_cost(rng, row, bookshelves);
+    let mut rng = thread_rng();
+    let (row, bookshelves) = random_enchantment_setup(&mut rng);
+    let enchantability: u32 = BOOK_ENCHANTMENT_VALUE + random_cost(&mut rng, row, bookshelves);
 
     let mut offers: Vec<(&Enchant, u8)> = Vec::new();
     for (i, enc) in ENCHANTS.iter().enumerate() {
@@ -117,7 +118,7 @@ pub fn roll_enchant(rng: &mut ThreadRng) -> Option<EnchantOffer> {
     let special_response = rng.gen_bool(0.2);
 
     offers
-        .choose_weighted(&mut *rng, |o| o.0.weight)
+        .choose_weighted(&mut rng, |o| o.0.weight)
         .ok()
         .map(|o| {
             let (enchant, level) = *o;
