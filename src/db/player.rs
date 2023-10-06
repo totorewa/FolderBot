@@ -75,7 +75,14 @@ impl PlayerScratch {
 
 impl std::fmt::Display for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} ({}): {} files, {} messages sent, {} commands sent, {:.2} average trident rolled out of {} rolls", &self.name(), &self.username, self.files, self.sent_messages, self.sent_commands, self.average_trident(), self.tridents_rolled)
+        let name = self.name();
+        let user = &self.username;
+        let files = self.files;
+        let coms = self.sent_commands;
+        let sent = self.sent_messages - coms;
+        let pct = 100.0 * (sent as f64) / (self.sent_messages as f64);
+        write!(f, "{} ({}): {} files, {} deaths. {} messages sent, {} commands sent ({:.0}%). {:.2} average trident rolled out of {} rolls.",
+               name, user, files, self.deaths, sent, coms, pct, self.average_trident(), self.tridents_rolled)
     }
 }
 
