@@ -836,21 +836,26 @@ impl IRCBotClient {
                 }
                 match trimmed.parse::<i64>().ok().filter(|n| *n >= 0 && *n <= 250) {
                     Some(n) => {
-                        const TRIDENT_PERMUTATION_COUNT: f64 = (i64::pow(251, 2) + 251) as f64 / 2.0; // 0-250 inclusive is 251 possible numbers
-                        let chance = (TRIDENT_PERMUTATION_COUNT / (251.0 - (n as f64))).ceil();
-                        if chance == TRIDENT_PERMUTATION_COUNT {
+                        let mut odds: f64 = 0.0;
+                        for k in n..=250 {
+                            odds += 1.0 / (251.0 * (k + 1) as f64);
+                        }
+
+                        let chance: f64 = (1.0 / odds).ceil();
+                        
+                        if chance == 63001.0 {
                             send_msg(&format!("You have a 1 in {} chance of rolling {}.. on the up side, if you round it, you have a 1 in 1 chance of not rolling {} monkaLaugh", chance, n, n)).await;
-                        } else if chance == TRIDENT_PERMUTATION_COUNT / 2.0 {
+                        } else if chance > 5612.0 { // 240 durability or more
                             send_msg(&format!("Rolling {} durability is a 1 in {} chance. Fun fact, you're twice as likely to get this than 250", n, chance)).await;
-                        } else if chance > 10000.0 {
+                        } else if chance > 1107.0 { // 200 durability or more
                             send_msg(&format!("You have a 1 in {} chance of rolling {}. You have more of a chance of getting injured by a toilet OMEGALULiguess", chance, n)).await;
-                        } else if chance > 1000.0 {
+                        } else if chance > 488.0 { // 150 durability or more
                             send_msg(&format!("You have a 1 in {} chance of {} durability, and yet still better odds than a calico spawning LULW", chance, n)).await;
-                        } else if chance > 500.0 {
+                        } else if chance > 208.0 { // 75 durability or more
                             send_msg(&format!("It's a 1 in {} chance of rolling {}. Did you know you have a higher chance of being born with an extra finger or toe?", chance, n)).await;
-                        } else if chance > 129.0 {
+                        } else if chance > 109.0 { // 25 durability or more
                             send_msg(&format!("You have a higher chance of falling to your death than the 1 in {} chance of rolling a {}", chance, n)).await;
-                        } else {
+                        } else { // less than 25 durability
                             send_msg(&format!("There's a 1 in {} chance of rolling {} durability. It doesn't really get much better than that tbh. If you can't even roll a {} what's the point?", chance, n, n)).await;
                         }
                     }
