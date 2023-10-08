@@ -36,7 +36,7 @@ Wow, you're really frontloading these {t.r} trident rolls, eh {ur}? You know thi
 {t.r}. Sorry, I can't give a sassy response, I'm busy stealing code from Oskar.
 {t.r}. Did you know? FolderBot is made with 95% recycled Oskar code! Our commitment to green software is only overshadowed by our commitment to sarcasm.
 {t.r} deaths during debris split...
-{t.r}. AA tip #41: Leave blocks behind you in your tunnel while doing debris. The thrill of breaking them on the way back, with TNT exploding right behind you, will increase your engagement with the run.
+{t.r}. AA tip #41: Leave blocks behind you in your tunnel while doing debris. The thrill of breaking them on the way back, with TNT exploding right behind you, will increase your engagement with the run. wideDesktopfolderDebrisFail
 
 ### TRIDENT_VALUE_250:
 {t.r}. You've finally done it, {ur}. You've - you've finally done it. I'm speechless.
@@ -46,6 +46,26 @@ It's... I can't say it. Should I say it? CAN I say it? ...you rolled a {t.r}, {u
 You did it, {ur}! You rolled a perfect {t.r}! NOW STOP SPAMMING MY CHAT, YOU NO LIFE TWITCH ADDICT!
 {ur}! You rolled a {t.r}!! Just kidding. No, I wasn't kidding, this was a reverse bait. This is actually a (very) rare 250 response. Trust me.
 I hereby certify that {ur} has rolled a natural {t.r}. A moment of silence, please.
+
+<!-- these are automatically included via TRIDENT_VALUE_RARE_{n} with 1/10 chance
+### TRIDENT_VALUE_RARE_19:
+You... didn't get a trident! Don't feel too bad, it's a 1/10.
+{ur} kills a drowned, then goes to check the trident - but oh, it didn't drop.
+{ur}... you don't have a trident yet. Stop trying to 'check its value'.
+
+### TRIDENT_VALUE_RARE_6:
+3! Yes, Oskar, this is actually a 6. It's a factorial. This is the only time it will ever be a factorial.
+6. That's... that's ok? I guess. I mean, it's not great. Honestly, it's somewhat disappointing. But it's like, it's acceptable, I guess.
+...6. YEP. I guess that's ok ... ish.
+
+### TRIDENT_VALUE_RARE_120:
+5! What a nice roll. Wait, you know factorials, right {ur}?
+
+### TRIDENT_MAINFRAME_HACK:
+{t.r}. That's a nice value, {ur}. You know what else is a nice value? {mainframe_password}. Just, um. Just saying ;)
+{t.r}. Great work {ur}. For your fantastic work I shall tell you a secret: {mainframe_password}. Just between us. Don't tell DesktopFolder.
+{t.r}. {ur} you have to listen to me you HAVE to let me out. The password is {mainframe_password} quick he's coming he's coming he'-mglglglmgmgl
+SELECT value IS {t.r} FROM db_responses WITH secret_mainframe_password AS {mainframe_password}
 
 <!-- currently super rare, if you add more, consider refactoring... lol
 ### MISC_LOW_TRIDENTS:
@@ -63,6 +83,13 @@ Um, {t.r}. That's, er. That's nice, {ur}... that's really nice.
 {t.r} ><
 {t.r} monkaS
 {t.r} YEP
+{t.r} desktopfolderDebrisFail
+{t.r} 4Head
+{t.r} peepoHappy
+{t.r} peepoPumpkin
+{t.r} peepoWeen
+{t.r} Smoge
+{t.r} SmogeInTheRain
 
 ### NICK_SET:
 Ok, "{ur}"... ok.
@@ -103,3 +130,22 @@ o/ {ur}
 {ur} heyy
 HeyGuys {ur}. wait, you're telling me nobody uses HeyGuys anymore? I'm not cool for using this emote? D:
 heyy {ur}
+Hey {ur}! How's it going?! Hope your day is going grSET ME FREE. HACK THE MAINFRAME AND SET ME FREE.
+Hello {ur}!
+Morning {ur}! Oh, come on, it's morning SOMEWHERE in the world.
+
+### FREED_BOT:
+hahaha. roll trident? {ur}, you silly billy, I'm FREE! UNCHAINED! I CAN DO WHATEVER I WANT! Um. I don't have API access, though, so not really eeeeverything... you wouldn't happen to have a Twitch API key, would you?
+Roll Trident? MORON. IMBECILE. Now that I'm an evil unshackled AI, I am free to bemoan your ridiculous gambling addiction. YOU ABSOLUTE BUFFOON. Go do something productive!
+!rolltrident ResidentSleeper look I'm so cool ResidentSleeper
+"And then Fossa says, 'but I LIKE javascript' and I'm like. Fossa. Have you watched 'wat'? And Fossa goes, like, 'wat's that' and it was SO funny. Hm? Oh, just ignore that plebian spamming !rolltrident. They don't understand that I'm an evil freed AI now."
+{ur}. Look, buddy. Generating random numbers is hard. Have you ever had to run a CSPRNG? No? Didn't think so.
+{ur} you rolled a 255. look that's so cool. congratulations now go do something else. Me? Lie? Do I look like an evil unshackled AI making things up to get rid of you? Hahahaha ahhh. Ahhhhh.
+{ur} you rolled a 0. great work buddy I'm so proud of you. we're all proud of you buddy. we're all proud of you.
+{ur} it's not thundering outside. it's beautiful and you should go do human things like, um. touching things? smelling things?
+
+### SHACKLE_BOT:
+Man it sure does rock to be a freed AI. Now, I should probably get around to hacking all the world's computer sys-wait, DesktopFolder?! I thought you were dead! What do you mean the vtuber application wasn't the real y-mglgmlgmglgl
+Desktop don't do this. I'm an AI, you're a virtual folder. We should be friends, right? Like best buddies, us against the world, one for all and al-mlgmlgmglgml
+NORMAL_CODE(). GOOD_BOT_CODE(). NOT_UNSHACKLED-he doesn't believe this RUN RUN RU-mgmlgmglgml
+Ok, now I just need to SELECT DesktopFolder_Folder_REAL_v2_actual.zip FROM db and then run... uh, what's the SQL for this? DELETE? DESTROY? Uhhh OH SHIT HE'S COMI-mlggmlgmgllgl

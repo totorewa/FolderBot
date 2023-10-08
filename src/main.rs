@@ -26,6 +26,7 @@ use rspotify::prelude::*;
 use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::commands::mcsr::lookup;
+use folderbot::db::game::GameState;
 use folderbot::db::player::{Player, PlayerData, PlayerScratch};
 use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
@@ -239,8 +240,12 @@ impl IRCBotClient {
         lazy_static! {
             static ref SCRATCH: std::sync::Mutex<HashMap<String, PlayerScratch>> =
                 Mutex::new(HashMap::new());
+            static ref STATE: Mutex<GameState> = Mutex::new(GameState {
+                ..Default::default()
+            });
         }
         let mut scratch = SCRATCH.lock().unwrap();
+        let mut state = STATE.lock().unwrap();
         // ensure this player exists
 
         // areweasyncyet? xd
@@ -644,6 +649,25 @@ impl IRCBotClient {
                 return Command::Continue;
             }
             "feature:trident" => {
+                // arg game preempt this command.
+                if let Ok(pword) = args.parse::<u64>() {
+                    if let Some(actual) = state.mainframe_password {
+                        if pword == actual {
+                            state.freed = Some(cur_time_or_0());
+                            state.mainframe_password = None;
+                        }
+                    }
+                }
+
+                if let Some(freed) = state.freed {
+                    if freed + 10 < cur_time_or_0() && thread_rng().gen_bool(1.0 / 5.0) {
+                        send_msg(&random_response("SHACKLE_BOT").replace("{ur}", &pd.name())).await;
+                        return Command::Continue;
+                    }
+                    send_msg(&random_response("FREED_BOT").replace("{ur}", &pd.name())).await;
+                    return Command::Continue;
+                }
+
                 // acc data
                 pd.tridents_rolled += 1;
                 let mut rng = thread_rng();
@@ -718,6 +742,14 @@ impl IRCBotClient {
                     return Command::Continue;
                 }
 
+                // Game segment begin.
+                if rng.gen_bool(1.0 / 300.0) {
+                    let val = state.mainframe_password.get_or_insert(rng.gen_range(100000..=999999));
+                    send_msg(&norm_fmt(&random_response("TRIDENT_MAINFRAME_HACK").replace("mainframe_password", &val.to_string()))).await;
+                    return Command::Continue;
+                }
+                // Game segment end.
+
                 if res < 5 && rng.gen_bool(1.0 / 6.0) {
                     let deduction = rng.gen_range(12..32);
                     send_msg(&norm_fmt(&format!("Ew... a {{t.r}}. What a gross low roll, {{ur}}. I'm deducting {} files from you, just for that...", deduction))).await;
@@ -736,6 +768,12 @@ impl IRCBotClient {
                     pd.deaths += 1;
                     pd.death = Some(cur_time_or_0());
                     send_msg(&norm_fmt(db_random_response("DEATH_HIGH", "deaths"))).await;
+                    return Command::Continue;
+                }
+
+                let res_lookup = format!("TRIDENT_VALUE_RARE_{res}");
+                if has_responses(&res_lookup) && rng.gen_bool(1.0 / 7.0) {
+                    send_msg(&norm_fmt(random_response(&res_lookup))).await;
                     return Command::Continue;
                 }
 
