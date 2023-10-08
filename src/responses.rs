@@ -25,7 +25,7 @@ pub fn rare_trident(roll: i32, rng: u32, user: &String) -> String {
         &["Oh cool, a whole {B} durability rolled by everyone's favourite chat participant {A}. Great work making this chat fun to read for everyone!", "{B}. Great work! You really tried hard for that."],
         // 241..=249
         &["You rolled a 250!! Just kidding. It was actually a {B}. Sure got you good, eh?", "{B}. Do you think if I said \"GET OUTSIDE\" {B} times, it would eventually sink in?"],
-        // 250
+        // 250 - these cannot happen. add to /responses
         &["You rolled a 250!! Just kidding. No, I wasn't kidding, this was a reverse bait. This is actually the rare 250 response. Trust me.", "I hereby certify that {A} has rolled a natural 250."],
     ];
     lazy_static::lazy_static! {
