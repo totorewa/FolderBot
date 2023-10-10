@@ -746,7 +746,7 @@ impl IRCBotClient {
                 // Game segment begin.
                 if rng.gen_ratio(1 + (state.game_factor), 420 + (state.game_factor)) {
                     let val = state.mainframe_password.get_or_insert(rng.gen_range(100000..=999999));
-                    send_msg(&norm_fmt(&random_response("TRIDENT_MAINFRAME_HACK").replace("mainframe_password", &val.to_string()))).await;
+                    send_msg(&norm_fmt(&random_response("TRIDENT_MAINFRAME_HACK").replace("{mainframe_password}", &val.to_string()))).await;
                     state.game_factor = 0;
                     return Command::Continue;
                 }
