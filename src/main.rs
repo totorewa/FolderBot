@@ -627,6 +627,12 @@ impl IRCBotClient {
                     }
                 }
             }
+            "feature:droptrident" => {
+                send_msg(&random_response("TRIDENT_DROP").replace("{ur}", &pd.name())).await;
+            }
+            "feature:faketrident" => {
+                send_msg(&random_response("FAKE_ROLL_TRIDENT").replace("{ur}", &pd.name())).await;
+            }
             "feature:tridentpb" => {
                 let _ = self
                     .sender
