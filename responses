@@ -61,6 +61,13 @@ You... didn't get a trident! Don't feel too bad, it's a 1/10.
 ### TRIDENT_VALUE_RARE_120:
 5! What a nice roll. Wait, you know factorials, right {ur}?
 
+### TRIDENT_VALUE_RARE_127:
+127... No, {ur}, 'most portals' is not a category.
+
+### TRIDENT_VALUE_RARE_128:
+128! Congratulations on filling in all the portals, {ur}!! Another 12 hours of your pitiful human life wasted!
+Wow, 128! That's exactly how many stronghold portals there are... you should try filling them in!
+
 ### TRIDENT_MAINFRAME_HACK:
 {t.r}. That's a nice value, {ur}. You know what else is a nice value? {mainframe_password}. Just, um. Just saying ;)
 {t.r}. Great work {ur}. For your fantastic work I shall tell you a secret: {mainframe_password}. Just between us. Don't tell DesktopFolder.

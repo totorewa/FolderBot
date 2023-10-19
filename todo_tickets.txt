@@ -8,6 +8,7 @@
 - interactivity of commands - like rolltrident does roll, then also maybe damages you, and you have a character? idk
 - hidden/discovered game in rolltrident
 - reputation!
+- soundboard: responses, trident responses? etc
 
 
 ======== spoilers down here ====
