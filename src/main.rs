@@ -23,7 +23,7 @@ use std::{io::Result, sync::Mutex};
 use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
 
-use folderbot::audio::Audio;
+use folderbot::{audio::Audio, trident::db_has_responses};
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::commands::mcsr::lookup;
 use folderbot::db::game::GameState;
@@ -47,6 +47,11 @@ fn cur_time_or_0() -> u64 {
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or(Duration::from_secs(0))
         .as_secs()
+}
+
+fn has_been_n_seconds_since(n: u64, t: u64) -> bool {
+    let ct = cur_time_or_0();
+    return ct > t + n
 }
 
 // Temporary until I find the correct way to do this.
@@ -630,6 +635,10 @@ impl IRCBotClient {
             "feature:droptrident" => {
                 send_msg(&random_response("TRIDENT_DROP").replace("{ur}", &pd.name())).await;
             }
+            "feature:title" => {
+                let s: &str = if db_has_responses(&args, "titles") { &args } else { "aa" };
+                send_msg(&db_random_response(s, "titles")).await;
+            }
             "feature:faketrident" => {
                 send_msg(&random_response("FAKE_ROLL_TRIDENT").replace("{ur}", &pd.name())).await;
             }
@@ -666,7 +675,7 @@ impl IRCBotClient {
                 }
 
                 if let Some(freed) = state.freed {
-                    if freed + 10 < cur_time_or_0() && thread_rng().gen_bool(1.0 / 5.0) {
+                    if has_been_n_seconds_since(10, freed) && thread_rng().gen_bool(1.0 / 5.0) {
                         send_msg(&random_response("SHACKLE_BOT").replace("{ur}", &pd.name())).await;
                         state.freed = None;
                         return Command::Continue;

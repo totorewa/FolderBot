@@ -62,10 +62,12 @@ fn get_db(key: &'static str) -> &'static ResponseDB {
     lazy_static! {
         static ref DB: ResponseDB = ResponseDB::from_db("responses");
         static ref DEATHDB: ResponseDB = ResponseDB::from_db("resources/deaths.resp");
+        static ref TITLES: ResponseDB = ResponseDB::from_db("resources/titles.resp");
     }
     match key {
         "main" => &DB,
         "deaths" => &DEATHDB,
+        "titles" => &TITLES,
         _ => panic!("Bad key used: {}", key),
     }
 }
