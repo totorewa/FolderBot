@@ -7,7 +7,11 @@ use rodio::cpal::traits::HostTrait;
 use rodio::DeviceTrait;
 
 pub struct Audio {
+    // These are unused, but if they are dropped, everything breaks
+    // Not sure I'd consider that safe, but hey! Underscores help.
+    _stream: rodio::OutputStream,
     sink: Sink,
+    _default_stream: Option<rodio::OutputStream>,
     default_sink: Option<Sink>,
 }
 
@@ -27,18 +31,22 @@ impl Audio {
 
         if let Some(aux) = aux {
             println!("Using VoiceMeeter Aux Input for soundboard.");
+            let (s, handle) = rodio::OutputStream::try_from_device(&aux.into()).unwrap();
             // Get our default output device also.
-            let (_, dhandle) = rodio::OutputStream::try_default().unwrap();
-            let (_, handle) = rodio::OutputStream::try_from_device(&aux.into()).unwrap();
+            let (ds, dhandle) = rodio::OutputStream::try_default().unwrap();
             Audio {
+                _stream: s,
                 sink: Sink::try_new(&handle).unwrap(),
+                _default_stream: Some(ds),
                 default_sink: Sink::try_new(&dhandle).ok(),
             }
         } else {
             println!("Warning: Did not find correct output device, using default.");
-            let (_, handle) = rodio::OutputStream::try_default().unwrap();
+            let (s, handle) = rodio::OutputStream::try_default().unwrap();
             Audio {
+                _stream: s,
                 sink: Sink::try_new(&handle).unwrap(),
+                _default_stream: None,
                 default_sink: None,
             }
         }
