@@ -38,7 +38,10 @@ impl Audio {
                 _stream: s,
                 sink: Sink::try_new(&handle).unwrap(),
                 _default_stream: Some(ds),
-                default_sink: Sink::try_new(&dhandle).ok(),
+                default_sink: Sink::try_new(&dhandle).ok().map(|s| {
+                    s.set_volume(0.3);
+                    s
+                }),
             }
         } else {
             println!("Warning: Did not find correct output device, using default.");
