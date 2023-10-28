@@ -54,6 +54,14 @@ fn has_been_n_seconds_since(n: u64, t: u64) -> bool {
     return ct > t + n
 }
 
+fn check_timer(dur: u64, last_time: u64) -> Option<u64> {
+    let ct = cur_time_or_0();
+    if ct > last_time + dur {
+        Some(ct)
+    }
+    else { None }
+}
+
 // Temporary until I find the correct way to do this.
 trait CaptureExt {
     fn str_at(&self, i: usize) -> String;
@@ -345,7 +353,11 @@ impl IRCBotClient {
                     .await;
                 log_res(format!("Returned a string response ({}).", x).as_str());
                 if !node.sound.is_empty() {
-                    self.audio.play_file(&node.sound)
+                    // Maybe play a sound. But, let's not make this spammable.
+                    if let Some(new_time) = check_timer(4, state.tm_sounds) {
+                        self.audio.play_file(&node.sound);
+                        state.tm_sounds = new_time;
+                    }
                 };
                 return Command::Continue;
             }
@@ -999,8 +1011,8 @@ impl IRCBotClient {
                 return Command::Continue;
             }
             "core:play_audio" => {
-                log_res("Tested audio.");
-                self.audio.play();
+                log_res("Audio testing has been disabled. Test with !ban.");
+                // self.audio.play();
             }
             "core:functioning_get_song" => {
                 let song_response = self
