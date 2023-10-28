@@ -654,6 +654,19 @@ impl IRCBotClient {
             "feature:faketrident" => {
                 send_msg(&random_response("FAKE_ROLL_TRIDENT").replace("{ur}", &pd.name())).await;
             }
+            "feature:anylb" => {
+                let p = match args.as_str() {
+                    "trident" => |p: &Player| { p.max_trident as i64 },
+                    "files" => |p: &Player| { p.files },
+                    "deaths" => |p: &Player| { p.deaths as i64 },
+                    "messages" => |p: &Player| { p.sent_messages as i64 },
+                    "commands" => |p: &Player| { p.sent_commands as i64 },
+                    "rolled_tridents" => |p: &Player| { p.tridents_rolled as i64 },
+                    _ => return Command::Continue,
+                };
+                send_msg(&self.player_data.any_leaderboard(p)).await;
+                return Command::Continue;
+            }
             "feature:tridentpb" => {
                 let _ = self
                     .sender

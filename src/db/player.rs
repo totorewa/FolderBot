@@ -159,6 +159,20 @@ impl PlayerData {
         }
         lb.join(", ")
     }
+
+    pub fn any_leaderboard<P>(&self, predicate: P) -> String
+        where P: Fn(&Player) -> i64
+    {
+        let itr = self
+            .players
+            .iter()
+            .sorted_by(|a, b| Ord::cmp(&predicate(&b.1), &predicate(&a.1)));
+        let mut lb = std::vec::Vec::new();
+        for (_, d) in itr.take(10) {
+            lb.push(format!("{}: {}", d.name(), predicate(&d)));
+        }
+        lb.join(", ")
+    }
 }
 
 impl Drop for PlayerData {
