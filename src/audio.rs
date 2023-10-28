@@ -2,24 +2,44 @@ use rodio::Sink;
 use std::fs::File;
 use std::io::BufReader;
 
+use rodio::cpal;
+use rodio::cpal::traits::HostTrait;
+use rodio::DeviceTrait;
+
 pub struct Audio {
     _stream: rodio::OutputStream,
-    handle: rodio::OutputStreamHandle,
-    sink: Option<Sink>,
+    _default_stream: Option<rodio::OutputStream>,
+    sink: Sink,
+    default_sink: Option<Sink>
 }
 
 impl Audio {
     pub fn new() -> Audio {
-        let (_stream, handle) = rodio::OutputStream::try_default().unwrap(); 
-        let mut a = Audio {
-            handle: handle,
-            _stream: _stream,
-            sink: None,
-        };
-        // nice, code that's safer in C++
-        a.sink = Some(Sink::try_new(&a.handle).unwrap());
+        let host = cpal::default_host();
+        let mut devices = host.output_devices().unwrap();
 
-        return a;
+        println!("Loading audio devices...");
+        let aux = devices.find(|device| {
+            if let Ok(name) = device.name() {
+                name.starts_with("VoiceMeeter Aux Input")
+            }
+            else { false }
+        });
+
+        let ((_stream, handle), (dstream, dhandle)) = if let Some(aux) = aux {
+            println!("Using VoiceMeeter Aux Input for soundboard.");
+            (rodio::OutputStream::try_from_device(&aux.into()).unwrap(), rodio::OutputStream::try_default().unwrap())
+        }
+        else {
+            println!("Warning: Did not find correct output device, using default.");
+            (rodio::OutputStream::try_default().unwrap(), (None, None))
+        };
+
+        Audio {
+            _stream: _stream,
+            sink: Sink::try_new(&handle).unwrap(),
+            handle: handle,
+        }
     }
 
     pub fn play(&self) {

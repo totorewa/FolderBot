@@ -14,7 +14,7 @@ test*
 *.ignore
 
 # Data
-v2_players.json
+v2_players*.json
 
 # Resources
 *.wav
