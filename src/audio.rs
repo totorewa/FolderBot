@@ -39,7 +39,7 @@ impl Audio {
                 sink: Sink::try_new(&handle).unwrap(),
                 _default_stream: Some(ds),
                 default_sink: Sink::try_new(&dhandle).ok().map(|s| {
-                    s.set_volume(0.3);
+                    s.set_volume(0.01);
                     s
                 }),
             }
