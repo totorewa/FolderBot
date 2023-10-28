@@ -154,8 +154,8 @@ impl PlayerData {
             .iter()
             .sorted_by(|a, b| Ord::cmp(&b.1.max_trident, &a.1.max_trident));
         let mut lb = std::vec::Vec::new();
-        for (u, d) in itr.take(10) {
-            lb.push(format!("{}: {}", &u, d.max_trident));
+        for (_, d) in itr.take(10) {
+            lb.push(format!("{}: {}", d.name(), d.max_trident));
         }
         lb.join(", ")
     }
