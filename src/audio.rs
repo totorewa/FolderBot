@@ -39,7 +39,7 @@ impl Audio {
                 sink: Sink::try_new(&handle).unwrap(),
                 _default_stream: Some(ds),
                 default_sink: Sink::try_new(&dhandle).ok().map(|s| {
-                    s.set_volume(0.01);
+                    s.set_volume(0.1);
                     s
                 }),
             }
@@ -52,6 +52,12 @@ impl Audio {
                 _default_stream: None,
                 default_sink: None,
             }
+        }
+    }
+
+    pub fn volume_default(&mut self, volume: f32) {
+        if let Some(s) = self.default_sink.as_ref() {
+            s.set_volume(volume);
         }
     }
 

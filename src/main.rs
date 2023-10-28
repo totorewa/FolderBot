@@ -986,6 +986,14 @@ impl IRCBotClient {
                     }
                 }
             }
+            "admin:mute" => {
+                self.audio.volume_default(0.0);
+                return Command::Continue;
+            }
+            "admin:unmute" => {
+                self.audio.volume_default(0.1);
+                return Command::Continue;
+            }
             "feature:nick" => {
                 log_res("Setting nick");
                 if args.len() > 0 {
