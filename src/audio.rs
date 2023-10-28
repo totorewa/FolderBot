@@ -1,4 +1,4 @@
-use rodio::Sink;
+use rodio::{Sink, Source};
 use std::fs::File;
 use std::io::BufReader;
 
@@ -7,10 +7,8 @@ use rodio::cpal::traits::HostTrait;
 use rodio::DeviceTrait;
 
 pub struct Audio {
-    _stream: rodio::OutputStream,
-    _default_stream: Option<rodio::OutputStream>,
     sink: Sink,
-    default_sink: Option<Sink>
+    default_sink: Option<Sink>,
 }
 
 impl Audio {
@@ -22,49 +20,62 @@ impl Audio {
         let aux = devices.find(|device| {
             if let Ok(name) = device.name() {
                 name.starts_with("VoiceMeeter Aux Input")
+            } else {
+                false
             }
-            else { false }
         });
 
-        let ((_stream, handle), (dstream, dhandle)) = if let Some(aux) = aux {
+        if let Some(aux) = aux {
             println!("Using VoiceMeeter Aux Input for soundboard.");
-            (rodio::OutputStream::try_from_device(&aux.into()).unwrap(), rodio::OutputStream::try_default().unwrap())
-        }
-        else {
+            // Get our default output device also.
+            let (_, dhandle) = rodio::OutputStream::try_default().unwrap();
+            let (_, handle) = rodio::OutputStream::try_from_device(&aux.into()).unwrap();
+            Audio {
+                sink: Sink::try_new(&handle).unwrap(),
+                default_sink: Sink::try_new(&dhandle).ok(),
+            }
+        } else {
             println!("Warning: Did not find correct output device, using default.");
-            (rodio::OutputStream::try_default().unwrap(), (None, None))
-        };
-
-        Audio {
-            _stream: _stream,
-            sink: Sink::try_new(&handle).unwrap(),
-            handle: handle,
+            let (_, handle) = rodio::OutputStream::try_default().unwrap();
+            Audio {
+                sink: Sink::try_new(&handle).unwrap(),
+                default_sink: None,
+            }
         }
     }
 
     pub fn play(&self) {
         let file = File::open("resources/out.mp3").unwrap();
-        let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
+        let source = rodio::Decoder::new(BufReader::new(file))
+            .unwrap()
+            .buffered();
 
-        self.sink.as_ref().unwrap().append(source);
-        // this might just immediately play, we'll see
+        // just plays immediately, it's multithreaded :)
+        self.sink.append(source.clone());
+        if let Some(s) = self.default_sink.as_ref() {
+            s.append(source);
+        }
     }
 
     pub fn play_file(&self, filename: &String) {
-        if self.sink.as_ref().unwrap().len() > 2 {
+        if self.sink.len() > 2 {
             return;
         }
         let file = match File::open(filename) {
             Ok(x) => x,
-            Err(_) => return // this should print
+            Err(_) => return, // this should print
         };
-        let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
+        let source = rodio::Decoder::new(BufReader::new(file))
+            .unwrap()
+            .buffered();
 
-        self.sink.as_ref().unwrap().append(source);
-        // this might just immediately play, we'll see
+        self.sink.append(source.clone());
+        if let Some(s) = self.default_sink.as_ref() {
+            s.append(source);
+        }
     }
 
     pub fn stop(&self) {
-        self.sink.as_ref().unwrap().stop();
+        self.sink.stop();
     }
 }
