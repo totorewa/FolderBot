@@ -659,7 +659,7 @@ impl IRCBotClient {
                     "trident" => |p: &Player| { p.max_trident as i64 },
                     "files" => |p: &Player| { p.files },
                     "deaths" => |p: &Player| { p.deaths as i64 },
-                    "messages" => |p: &Player| { p.sent_messages as i64 },
+                    "messages" => |p: &Player| { (p.sent_messages - p.sent_commands) as i64 },
                     "commands" => |p: &Player| { p.sent_commands as i64 },
                     "rolled_tridents" => |p: &Player| { p.tridents_rolled as i64 },
                     _ => return Command::Continue,
