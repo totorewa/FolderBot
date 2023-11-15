@@ -320,6 +320,8 @@ impl IRCBotClient {
                             .await;
                         }
                     }
+                } else if cmd.contains("linux") && thread_rng().gen_bool(1.0 / 2.0) {
+                    send_msg(&String::from("Did you mean GNU/Linux? - Stallman")).await;
                 }
                 return Command::Continue; // Not a valid command
             }
