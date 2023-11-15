@@ -1,5 +1,8 @@
 # Bunch of things to do asap / during rewrites / etc
 
+- https://dev.twitch.tv/docs/api/get-started/
+- https://dev.twitch.tv/docs/irc/chat-commands/#migration-guide
+
 - refactor, convert to use db loading only
 - File-loadable better trident rolls -> later cause I'm lazy
 - Maybe a response engine with custom handling
