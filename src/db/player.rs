@@ -148,6 +148,18 @@ impl PlayerData {
         }
     }
 
+    pub fn apply<P>(&mut self, name: &String, predicate: P) -> Option<&Player>
+    where
+        P: Fn(&mut Player),
+    {
+        if self.players.contains_key(name) {
+            predicate(self.player(name));
+            self.players.get(name)
+        } else {
+            None
+        }
+    }
+
     pub fn leaderboard(&self) -> String {
         let itr = self
             .players
@@ -161,7 +173,8 @@ impl PlayerData {
     }
 
     pub fn any_leaderboard<P>(&self, predicate: P) -> String
-        where P: Fn(&Player) -> i64
+    where
+        P: Fn(&Player) -> i64,
     {
         let itr = self
             .players

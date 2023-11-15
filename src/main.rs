@@ -380,7 +380,7 @@ impl IRCBotClient {
         // lol
         if let Some(death_time) = pd.death {
             let name = pd.name();
-            if death_time + 30 + thread_rng().gen_range(0..=270) < cur_time_or_0() {
+            if death_time + 15 + thread_rng().gen_range(0..=270) < cur_time_or_0() {
                 pd.death = None;
                 let _ = self
                     .sender
@@ -517,6 +517,20 @@ impl IRCBotClient {
             "meta:stop" => {
                 log_res("Stopping as requested by command.");
                 return Command::Stop;
+            }
+            "admin:revive" => {
+                let name = pd.name();
+                if let Some(p) = self.player_data.apply(&args.to_lowercase(), |p| { p.death = None; }) {
+                    let othername = p.name();
+                    let _ = self
+                        .sender
+                        .send(TwitchFmt::privmsg(
+                            &(db_random_response("FAKE_RESURRECTION", "deaths").replace("{ur}", &name).replace("{otherur}", &othername)),
+                            &self.channel,
+                        ))
+                        .await;
+                }
+                return Command::Continue;
             }
             "meta:playerdata" => {
                 let _ = self
