@@ -23,7 +23,6 @@ use std::{io::Result, sync::Mutex};
 use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
 
-use folderbot::{audio::Audio, trident::db_has_responses};
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::commands::mcsr::lookup;
 use folderbot::db::game::GameState;
@@ -33,6 +32,7 @@ use folderbot::game::Game;
 use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
 use folderbot::trident::{db_random_response, has_responses, random_response};
+use folderbot::{audio::Audio, trident::db_has_responses};
 
 use serde::{Deserialize, Serialize};
 
@@ -51,15 +51,16 @@ fn cur_time_or_0() -> u64 {
 
 fn has_been_n_seconds_since(n: u64, t: u64) -> bool {
     let ct = cur_time_or_0();
-    return ct > t + n
+    return ct > t + n;
 }
 
 fn check_timer(dur: u64, last_time: u64) -> Option<u64> {
     let ct = cur_time_or_0();
     if ct > last_time + dur {
         Some(ct)
+    } else {
+        None
     }
-    else { None }
 }
 
 // Temporary until I find the correct way to do this.
@@ -520,12 +521,34 @@ impl IRCBotClient {
             }
             "admin:revive" => {
                 let name = pd.name();
-                if let Some(p) = self.player_data.apply(&args.to_lowercase(), |p| { p.death = None; }) {
+                if let Some(p) = self.player_data.apply(&args.to_lowercase(), |p| {
+                    p.death = None;
+                }) {
                     let othername = p.name();
                     let _ = self
                         .sender
                         .send(TwitchFmt::privmsg(
-                            &(db_random_response("FAKE_RESURRECTION", "deaths").replace("{ur}", &name).replace("{otherur}", &othername)),
+                            &(db_random_response("FAKE_RESURRECTION", "deaths")
+                                .replace("{ur}", &name)
+                                .replace("{otherur}", &othername)),
+                            &self.channel,
+                        ))
+                        .await;
+                }
+                return Command::Continue;
+            }
+            "admin:derevive" => {
+                let name = pd.name();
+                if let Some(p) = self.player_data.apply(&args.to_lowercase(), |p| {
+                    p.death = Some(cur_time_or_0());
+                }) {
+                    let othername = p.name();
+                    let _ = self
+                        .sender
+                        .send(TwitchFmt::privmsg(
+                            &(db_random_response("FAKE_DEATH", "deaths")
+                                .replace("{ur}", &name)
+                                .replace("{otherur}", &othername)),
                             &self.channel,
                         ))
                         .await;
@@ -662,7 +685,11 @@ impl IRCBotClient {
                 send_msg(&random_response("TRIDENT_DROP").replace("{ur}", &pd.name())).await;
             }
             "feature:title" => {
-                let s: &str = if db_has_responses(&args, "titles") { &args } else { "aa" };
+                let s: &str = if db_has_responses(&args, "titles") {
+                    &args
+                } else {
+                    "aa"
+                };
                 send_msg(&db_random_response(s, "titles")).await;
             }
             "feature:faketrident" => {
@@ -670,12 +697,12 @@ impl IRCBotClient {
             }
             "feature:anylb" => {
                 let p = match args.as_str() {
-                    "trident" => |p: &Player| { p.max_trident as i64 },
-                    "files" => |p: &Player| { p.files },
-                    "deaths" => |p: &Player| { p.deaths as i64 },
-                    "messages" => |p: &Player| { (p.sent_messages - p.sent_commands) as i64 },
-                    "commands" => |p: &Player| { p.sent_commands as i64 },
-                    "rolled_tridents" => |p: &Player| { p.tridents_rolled as i64 },
+                    "trident" => |p: &Player| p.max_trident as i64,
+                    "files" => |p: &Player| p.files,
+                    "deaths" => |p: &Player| p.deaths as i64,
+                    "messages" => |p: &Player| (p.sent_messages - p.sent_commands) as i64,
+                    "commands" => |p: &Player| p.sent_commands as i64,
+                    "rolled_tridents" => |p: &Player| p.tridents_rolled as i64,
                     _ => return Command::Continue,
                 };
                 send_msg(&self.player_data.any_leaderboard(p)).await;
@@ -799,8 +826,14 @@ impl IRCBotClient {
 
                 // Game segment begin.
                 if rng.gen_ratio(1 + (state.game_factor), 420 + (state.game_factor)) {
-                    let val = state.mainframe_password.get_or_insert(rng.gen_range(100000..=999999));
-                    send_msg(&norm_fmt(&random_response("TRIDENT_MAINFRAME_HACK").replace("{mainframe_password}", &val.to_string()))).await;
+                    let val = state
+                        .mainframe_password
+                        .get_or_insert(rng.gen_range(100000..=999999));
+                    send_msg(&norm_fmt(
+                        &random_response("TRIDENT_MAINFRAME_HACK")
+                            .replace("{mainframe_password}", &val.to_string()),
+                    ))
+                    .await;
                     state.game_factor = 0;
                     return Command::Continue;
                 }
@@ -937,25 +970,36 @@ impl IRCBotClient {
                         }
 
                         let chance: f64 = (1.0 / odds).ceil();
-                        
+
                         if chance == 63001.0 {
                             send_msg(&format!("You have a 1 in {} chance of rolling {}.. on the up side, if you round it, you have a 1 in 1 chance of not rolling {} monkaLaugh", chance, n, n)).await;
-                        } else if chance > 5612.0 { // 240 durability or more
+                        } else if chance > 5612.0 {
+                            // 240 durability or more
                             send_msg(&format!("Rolling {} durability is a 1 in {} chance. Fun fact, you're twice as likely to get this than 250", n, chance)).await;
-                        } else if chance > 1107.0 { // 200 durability or more
+                        } else if chance > 1107.0 {
+                            // 200 durability or more
                             send_msg(&format!("You have a 1 in {} chance of rolling {}. You have more of a chance of getting injured by a toilet OMEGALULiguess", chance, n)).await;
-                        } else if chance > 488.0 { // 150 durability or more
+                        } else if chance > 488.0 {
+                            // 150 durability or more
                             send_msg(&format!("You have a 1 in {} chance of {} durability, and yet still better odds than a calico spawning LULW", chance, n)).await;
-                        } else if chance > 208.0 { // 75 durability or more
+                        } else if chance > 208.0 {
+                            // 75 durability or more
                             send_msg(&format!("It's a 1 in {} chance of rolling {}. Did you know you have a higher chance of being born with an extra finger or toe?", chance, n)).await;
-                        } else if chance > 109.0 { // 25 durability or more
+                        } else if chance > 109.0 {
+                            // 25 durability or more
                             send_msg(&format!("You have a higher chance of falling to your death than the 1 in {} chance of rolling a {}", chance, n)).await;
-                        } else { // less than 25 durability
+                        } else {
+                            // less than 25 durability
                             send_msg(&format!("There's a 1 in {} chance of rolling {} durability. It doesn't really get much better than that tbh. If you can't even roll a {} what's the point?", chance, n, n)).await;
                         }
                     }
                     None => {
-                        send_msg(&format!("You might find it difficult to roll a {}, {}... but feel free to try", trimmed, &pd.name())).await;
+                        send_msg(&format!(
+                            "You might find it difficult to roll a {}, {}... but feel free to try",
+                            trimmed,
+                            &pd.name()
+                        ))
+                        .await;
                     }
                 }
             }
