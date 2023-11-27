@@ -297,6 +297,8 @@ impl IRCBotClient {
             None => {
                 log_res("Skipped as no match was found.");
 
+                state.last_message = cur_time_or_0();
+
                 // Maybe greet.
                 if scratch
                     .entry(user.clone())
@@ -732,6 +734,9 @@ impl IRCBotClient {
                 return Command::Continue;
             }
             "feature:trident" => {
+                pd.last_tridents.rotate_left(1);
+                pd.last_tridents[4] = cur_time_or_0();
+
                 // arg game preempt this command.
                 if let Ok(pword) = args.parse::<u64>() {
                     if let Some(actual) = state.mainframe_password {
@@ -867,6 +872,19 @@ impl IRCBotClient {
                 if has_responses(&res_lookup) && rng.gen_bool(1.0 / 7.0) {
                     send_msg(&norm_fmt(random_response(&res_lookup))).await;
                     return Command::Continue;
+                }
+
+                if !has_been_n_seconds_since(10, state.last_message) {
+                    // Spam prevention when people send messages.
+                    if pd.last_tridents[4] != 0 && pd.last_tridents[4] - pd.last_tridents[0] < 5 {
+                        // KILL KILL KILL
+                        // uh I mean, yknow
+                        pd.spam_prevention += 1;
+                        pd.deaths += 1;
+                        pd.death = Some(cur_time_or_0());
+                        send_msg(&norm_fmt(db_random_response("DEATH_LOW", "deaths"))).await;
+                        return Command::Continue;
+                    }
                 }
 
                 if res < 66 && user == "pacmanmvc" && rng.gen_bool(1.0 / 10.0) {

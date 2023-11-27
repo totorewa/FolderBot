@@ -30,6 +30,11 @@ pub struct Player {
     #[serde(default)]
     pub rolled_250s: u32,
 
+    #[serde(default)]
+    pub spam_prevention: u32,
+    #[serde(default)]
+    pub last_tridents: [u64; 5],
+
     // Enchant metadata
     #[serde(default)]
     pub enchants_rolled: u64,
