@@ -1,3 +1,8 @@
+!bind a:b
+line based alpha sort responses file
+basically remove commands.json
+
+
 # Bunch of things to do asap / during rewrites / etc
 
 - https://dev.twitch.tv/docs/api/get-started/
