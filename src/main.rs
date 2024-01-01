@@ -83,10 +83,10 @@ fn bad_eval(s: String) -> String {
         if let Ok(a) = caps.str_at(1).parse::<i64>() {
             if let Ok(b) = caps.str_at(3).parse::<i64>() {
                 return match caps.get(2).unwrap().as_str() {
-                    "*" => a * b,
-                    "/" => a / b,
-                    "-" => a - b,
-                    "+" => a + b,
+                    "*" => (a * b).to_string(),
+                    "/" => (a / b).to_string(),
+                    "-" => (a - b).to_string(),
+                    "+" => (a + b).to_string(),
                     _ => "Unknown...".to_string(),
                 };
             }
