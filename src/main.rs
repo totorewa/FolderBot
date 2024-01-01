@@ -76,20 +76,19 @@ impl CaptureExt for regex::Captures<'_> {
 
 fn bad_eval(s: String) -> String {
     lazy_static! {
-        static ref EVAL_RE: Regex =
-            Regex::new(r"\s*(\d+)\s*([+\-*/])\s*(\d+)").unwrap();
+        static ref EVAL_RE: Regex = Regex::new(r"\s*(\d+)\s*([+\-*/])\s*(\d+)").unwrap();
     }
 
     if let Some(caps) = EVAL_RE.captures(&s) {
-        if let Ok(a) = caps.str_at(1).parse::<i64>{
-            if let Ok(b) = caps.str_at(3).parse::<i64>{
+        if let Ok(a) = caps.str_at(1).parse::<i64>() {
+            if let Ok(b) = caps.str_at(3).parse::<i64>() {
                 return match caps.get(2).unwrap().as_str() {
                     "*" => a * b,
                     "/" => a / b,
                     "-" => a - b,
                     "+" => a + b,
-                    _ => "Unknown...".to_string() 
-                }
+                    _ => "Unknown...".to_string(),
+                };
             }
         }
     }
@@ -1285,7 +1284,10 @@ async fn async_main() {
     let channel = get_file_trimmed("auth/id.txt");
 
     // println!("Nick: {} | Secret: {} | Channel: {}", nick, secret, channel);
-    println!("Connecting with nick '{}' to channel '{}' using auth/secret.txt", nick, channel);
+    println!(
+        "Connecting with nick '{}' to channel '{}' using auth/secret.txt",
+        nick, channel
+    );
 
     // Supported commands, loaded from JSON.
     let ct = CommandTree::from_json_file(Path::new("commands.json"));
