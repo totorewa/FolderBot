@@ -74,6 +74,28 @@ impl CaptureExt for regex::Captures<'_> {
     }
 }
 
+fn bad_eval(s: String) -> String {
+    lazy_static! {
+        static ref EVAL_RE: Regex =
+            Regex::new(r"\s*(\d+)\s*([+\-*/])\s*(\d+)").unwrap();
+    }
+
+    if let Some(caps) = EVAL_RE.captures(&s) {
+        if let Ok(a) = caps.str_at(1).parse::<i64>{
+            if let Ok(b) = caps.str_at(3).parse::<i64>{
+                return match caps.get(2).unwrap().as_str() {
+                    "*" => a * b,
+                    "/" => a / b,
+                    "-" => a - b,
+                    "+" => a + b,
+                    _ => "Unknown...".to_string() 
+                }
+            }
+        }
+    }
+    "Parse failure...".to_string()
+}
+
 /*
 // Message filtering
 enum FilterResult {
@@ -1093,6 +1115,10 @@ impl IRCBotClient {
                 send_msg(&random_response("NICK_SET").replace("{ur}", &pd.name())).await;
                 return Command::Continue;
             }
+            "feature:eval" => {
+                send_msg(&format!("{} -> {}", args.clone(), bad_eval(args.clone()))).await;
+                return Command::Continue;
+            }
             "admin:nick" => {
                 log_res("Setting nick (admin)");
                 let v: Vec<&str> = args.splitn(2, "|").collect();
@@ -1258,7 +1284,8 @@ async fn async_main() {
     let secret = get_file_trimmed("auth/secret.txt");
     let channel = get_file_trimmed("auth/id.txt");
 
-    println!("Nick: {} | Secret: {} | Channel: {}", nick, secret, channel);
+    // println!("Nick: {} | Secret: {} | Channel: {}", nick, secret, channel);
+    println!("Connecting with nick '{}' to channel '{}' using auth/secret.txt", nick, channel);
 
     // Supported commands, loaded from JSON.
     let ct = CommandTree::from_json_file(Path::new("commands.json"));
