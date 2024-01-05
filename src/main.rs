@@ -83,7 +83,7 @@ fn bad_eval(s: String) -> String {
         if let Ok(a) = caps.str_at(1).parse::<i64>() {
             if let Ok(b) = caps.str_at(3).parse::<i64>() {
                 return match caps.get(2).unwrap().as_str() {
-                    "*" => a.checked_mul(b).map_or("Um... no, but nice try.".to_string(), |v| v),
+                    "*" => a.checked_mul(b).map_or("Um... no, but nice try.".to_string(), |v| v.to_string()),
                     "/" => a.checked_div(b).map_or("152. xD".to_string(), |v| v.to_string()),
                     "-" => a.checked_sub(b).map_or("...why.".to_string(), |v| v.to_string()),
                     "+" => a.checked_add(b).map_or("Great work, you rolled a 255!".to_string(), |v| v.to_string()),
