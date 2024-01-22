@@ -18,7 +18,7 @@ use std::{
     collections::HashMap,
     sync::atomic::{AtomicU64, Ordering},
 };
-use std::{io::Result, sync::Mutex};
+use std::sync::Mutex;
 
 use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
@@ -83,16 +83,31 @@ fn bad_eval(s: String) -> String {
         if let Ok(a) = caps.str_at(1).parse::<i64>() {
             if let Ok(b) = caps.str_at(3).parse::<i64>() {
                 return match caps.get(2).unwrap().as_str() {
-                    "*" => a.checked_mul(b).map_or("Um... no, but nice try.".to_string(), |v| v.to_string()),
-                    "/" => a.checked_div(b).map_or("152. xD".to_string(), |v| v.to_string()),
-                    "-" => a.checked_sub(b).map_or("...why.".to_string(), |v| v.to_string()),
-                    "+" => a.checked_add(b).map_or("Great work, you rolled a 255!".to_string(), |v| v.to_string()),
+                    "*" => a
+                        .checked_mul(b)
+                        .map_or("Um... no, but nice try.".to_string(), |v| v.to_string()),
+                    "/" => a
+                        .checked_div(b)
+                        .map_or("152. xD".to_string(), |v| v.to_string()),
+                    "-" => a
+                        .checked_sub(b)
+                        .map_or("...why.".to_string(), |v| v.to_string()),
+                    "+" => a
+                        .checked_add(b)
+                        .map_or("Great work, you rolled a 255!".to_string(), |v| {
+                            v.to_string()
+                        }),
                     _ => "Unknown...".to_string(),
                 };
             }
         }
     }
     "Parse failure...".to_string()
+}
+
+enum ReadResult {
+    Stop(String),
+    Continue(String),
 }
 
 /*
@@ -192,7 +207,7 @@ impl IRCBotMessageSender {
                     break;
                 }
             }
-            task::sleep(Duration::from_millis(100)).await;
+            task::sleep(Duration::from_millis(200)).await;
         }
     }
 }
@@ -1206,7 +1221,7 @@ impl IRCBotClient {
         }
     }
 
-    async fn launch_read(&mut self) -> Result<String> {
+    async fn launch_read(&mut self) -> ReadResult {
         lazy_static! {
             static ref COMMAND_RE: Regex =
                 Regex::new(r"^(bot |folder |[^\s\w]|)\s*(.*?)\s*$").unwrap();
@@ -1237,7 +1252,9 @@ impl IRCBotClient {
                         Some(caps) => (caps.str_at(1), caps.str_at(2)),
                         None => match self.handle_twitch(&line).await {
                             // todo - reconnect instead of stopping.
-                            Command::Stop => return Ok("Stopped due to twitch.".to_string()),
+                            Command::Stop => {
+                                return ReadResult::Continue("Stopped due to twitch.".to_string())
+                            }
                             _ => continue,
                         },
                     };
@@ -1259,7 +1276,7 @@ impl IRCBotClient {
 
                     // Finally, we actually take the command and maybe take action.
                     if let Command::Stop = self.do_command(name, prefix, command).await {
-                        return Ok("Received stop command.".to_string());
+                        return ReadResult::Stop("Received stop command.".to_string());
                     }
                 }
                 Err(e) => {
@@ -1282,25 +1299,28 @@ async fn async_main() {
     let nick = get_file_trimmed("auth/user.txt");
     let secret = get_file_trimmed("auth/secret.txt");
     let channel = get_file_trimmed("auth/id.txt");
-
     // println!("Nick: {} | Secret: {} | Channel: {}", nick, secret, channel);
-    println!(
-        "Connecting with nick '{}' to channel '{}' using auth/secret.txt",
-        nick, channel
-    );
 
-    // Supported commands, loaded from JSON.
-    let ct = CommandTree::from_json_file(Path::new("commands.json"));
-    //ct.dump_file(Path::new("commands.parsed.json"));
-    let (mut client, mut forwarder) = IRCBotClient::connect(nick, secret, channel, ct).await;
-    client.authenticate().await;
+    loop {
+        println!(
+            "Connecting with nick '{}' to channel '{}' using auth/secret.txt",
+            nick, channel
+        );
 
-    select! {
-        return_message = client.launch_read().fuse() => match return_message {
-            Ok(message) => { println!("Quit (Read): {}", message); },
-            Err(error) => { println!("Error (Read): {}", error); }
-        },
-        () = forwarder.launch_write().fuse() => {}
+        // Supported commands, loaded from JSON.
+        let ct = CommandTree::from_json_file(Path::new("commands.json"));
+        //ct.dump_file(Path::new("commands.parsed.json"));
+        let (mut client, mut forwarder) = IRCBotClient::connect(nick.clone(), secret.clone(), channel.clone(), ct).await;
+        client.authenticate().await;
+
+        select! {
+            return_message = client.launch_read().fuse() => match return_message {
+                ReadResult::Continue(message) => { println!("Continuing (restarting) (Read): {}", message); },
+                ReadResult::Stop(message) => { println!("Stopping (Read): {}", message); break; },
+            },
+            () = forwarder.launch_write().fuse() => {}
+        }
+        task::sleep(Duration::from_millis(100)).await;
     }
 }
 
