@@ -344,7 +344,10 @@ impl IRCBotClient {
                     // Generic greets only for now. Later, custom greets per player.
                     // Ok, maybe we can do some custom greets.
                     let ug = format!("USER_GREET_{}", &user);
-                    if has_responses(&ug) {
+                    if user == "pacmanmvc" && cmd.contains("opper") {
+                        send_msg(&"Good day, PacManner.".to_string()).await;
+                    }
+                    else if has_responses(&ug) {
                         let name = pd.name().clone();
                         self.send_msg(random_response(&ug).replace("{ur}", &name))
                             .await;

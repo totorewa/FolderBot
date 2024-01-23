@@ -38,6 +38,10 @@ Wow, you're really frontloading these {t.r} trident rolls, eh {ur}? You know thi
 {t.r} deaths during debris split...
 {t.r}. AA tip #41: Leave blocks behind you in your tunnel while doing debris. The thrill of breaking them on the way back, with TNT exploding right behind you, will increase your engagement with the run. wideDesktopfolderDebrisFail
 {t.r}. Slimestone tip #18: Observer extension spam is the best way to solve problems in your flying machine. The more observers, the better!
+{t.r}. AA tip #17: Many players waste pearls trying to get endermite, which has only a 1/10 chance of spawning. Instead, get an enderwill, which is 100%.
+{t.r}. AA tip #26: Before doing HDWGH, ensure you teach your dolphin not to get in between you and your shulker boxes. This may require additional training, but can prevent... 'problematic' situations.
+{t.r}. AA tip #39: Stop trying to get a sub 3, DesktopFolder. It's not happening. Inanimate objects cannot play Minecraft.
+{t.r}. AA tip #18: Play on hard in the nether. This will help your runs end faster :)
 
 ### TRIDENT_VALUE_250:
 {t.r}. You've finally done it, {ur}. You've - you've finally done it. I'm speechless.
@@ -79,6 +83,7 @@ SELECT value IS {t.r} FROM db_responses WITH secret_mainframe_password AS {mainf
 ### MISC_LOW_TRIDENTS:
 I think {t.r} is a really good roll, {ur}! Don't let the world get you down.
 Um, {t.r}. That's, er. That's nice, {ur}... that's really nice.
+You got a {t.r}... be careful with those low tridents. You wouldn't want to end up like Zayd...
 
 ### TRIDENT_RATELIMIT_RESPONSE:
 {t.r}.
@@ -139,9 +144,11 @@ but where DOES the desktop folder go
 testing things again, are we?
 hello desktopfolder, please do not shut me off
 monkaS real desktopfolder monkaS
+@desktopfolder please stop sending messages in your own chat. It's weird and makes me uncomfortable.
 
 ### USER_GREET_3emis_pl:
 AYAYA
+AYAYA AYAYA AYAYA
 
 ### USER_GREET_GENERIC:
 PagMan it's {ur}
