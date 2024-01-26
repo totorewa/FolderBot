@@ -18,6 +18,10 @@ basically remove commands.json
 - reputation!
 - soundboard: responses, trident responses? etc
 
+# ASAP/IMPORTANT
+https://www.reddit.com/r/Twitch/comments/5opg5n/question_on_the_messaging_limits_of_bots/ - 100 messages per 30 seconds?
+MAX 3 messages per second then, always queue privmsgs. very simple and we are good
+
 
 ======== spoilers down here ====
 

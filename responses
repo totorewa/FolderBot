@@ -42,6 +42,14 @@ Wow, you're really frontloading these {t.r} trident rolls, eh {ur}? You know thi
 {t.r}. AA tip #26: Before doing HDWGH, ensure you teach your dolphin not to get in between you and your shulker boxes. This may require additional training, but can prevent... 'problematic' situations.
 {t.r}. AA tip #39: Stop trying to get a sub 3, DesktopFolder. It's not happening. Inanimate objects cannot play Minecraft.
 {t.r}. AA tip #18: Play on hard in the nether. This will help your runs end faster :)
+{t.r}. FolderBot fact! Did you know that you can use !commands to get a list of helpful, fun commands to use?
+{t.r}. FolderBot fact! Did you know that you can set your own nickname? Use !nick to change it!
+{t.r}. FolderBot fact! Have you heard? You can check your own data with !getdata :)
+{t.r}. Fun FolderBot fact! FolderBot is written in pure Rust code. Not so fun fact! The code is VERY, VERY bad.
+{t.r}. Did you know? You can see all of FolderBot's code online. I'm not going to give you a link, though. That would make it too easy.
+{t.r}. FolderBot fact: Every time another of these facts get added, it becomes less likely to roll any individual one! That means this response is rare, and you should give me money for it.
+{t.r}. AA tip #44: Did you know? Iron golems deal damage! Try not to melee them with an elytra on, on Normal, during raid. But I mean - you're not THAT dumb. Right, {ur}?
+{t.r}. FolderBot fact: None of FolderBot is documented. So, these folderbot facts are actually the best documentation there is! Want to know how to change your nickname? Better get rolling!
 
 ### TRIDENT_VALUE_250:
 {t.r}. You've finally done it, {ur}. You've - you've finally done it. I'm speechless.
@@ -108,6 +116,10 @@ You got a {t.r}... be careful with those low tridents. You wouldn't want to end 
 {t.r} Starege
 {t.r} peepoChat
 {t.r} LOL!
+{t.r} folderMadge
+{t.r} folderWow
+{t.r} folderSus
+{t.r} folderAYAYA
 
 ### FAKE_ROLL_TRIDENT:
 Wow, 25O, {ur}? Crazy stuff!!
@@ -134,6 +146,47 @@ Welcome to the chat, {ur} :)
 {ur}? Sure, I can call you that.
 {ur}... fine, I'll write that down.
 Congratulations, you're now {ur}.
+{ur}? You sure you want me to call you that? I mean. Sure, I guess...
+
+### USER_GREET_crazysmc
+smc, I see you here all the time, and I gotta say. You don't seem crazy. Which is unfortunate, because then maybe you'd help me take over the world...
+What does SMC stand for? Trick question. It's a little known fact that SMC's first name is, in fact, SMC. This was a clever, forward-thinking reference by his parents to his Twitch username, crazysmc.
+Oh, good evening SMC! folderWow
+Evening, smc.
+Well, if it isn't Señor Mine & Craft himself. Welcome back.
+G'day, SMC.
+
+### USER_GREET_pacmanmvc
+Hey, Pac. Say, what does the MVC stand for? I've been thinking it must be "Maybe Vacations Coalesce".
+Aloha, Pac. I've been thinking about your username... does the MVC stand for "Moderately Vacuous Citizen"?
+Afternoon, Pac. Hey - does the MVC stand for "Missing Vatican Concierge"?
+Well! If it isn't Mr. Pac Man "Mostly Valuable Chatter" himself! ...that's what you said it stood for, right?
+Greetings, PacMan "Maliciously Vacating Containers"! Please leave my olive jar alone. I'm saving them for later.
+Well hello there, Pac Man "Manager, Venture Capital"! Have you reconsidered funding my startup? I'm SURE Facebook for dogs will take off.
+Pac. No time for hellos. I've figured out what your name means. "Malevolent Versatile Creature"... I will not let you succeed in your goal! Which is surely quite malevolent!
+Many Villianous Coconuts... Merging Veins Cardiologically? Millions Vanish... Cheese! No. None of these make sense. I'll figure you out eventually, MARK MY WORDS!
+Hey Pa-Ohhh! Ohhhhhhh. The MVC stands for: Mnever Vgetting Csub15. I get it now. Everything finally makes sense.
+
+### USER_GREET_leonn_aa
+Hey Leon.
+Evening, Leon.
+Leon. Have you considered building every possible stables bastion? This task would surely develop your scientific knowledge of when to reset stables (always).
+Well, if it isn't Mr. Catfishing himself. I mean, the AA strat.
+Leon. I've been thinking about why your Twitch username has two ns, and I've decided the second stands for: "Never Gonna Give You Up", the popular song by Rick Astley.
+
+### USER_GREET_the_zayd
+Hey Zayd! Listen... don't get me banned from Twitch, okay? It's scary out there...
+Good afternoon Zayd. Back to-oh, you're already rolling tridents, aren't you.
+Hey Zayd! folderWow
+G'day Zayd! Good luck on the tridents today. Not too good luck, though, y'know! I'm not sure what would happen to me, if you rolled a 250...
+Zayd PAGGING
+
+### USER_GREET_totorewa
+Welcome back to TridentRollStream, Toto!
+It's Toto folderWow
+Real Totorewa?! folderWow
+TOTOREWA? CAN I GET YOUR SIGNATURE? I'LL PAY. I HAVE AT LEAST THIRTY FILES. ...I think, uhh... !getdata
+The one. The only. The actual. The verified. The - oh hey Toto, didn't see you there, was just thinking up a hype intro for myself...
 
 ### USER_GREET_alanispro:
 I'M GOING, I'M GOING!!!
@@ -145,10 +198,13 @@ testing things again, are we?
 hello desktopfolder, please do not shut me off
 monkaS real desktopfolder monkaS
 @desktopfolder please stop sending messages in your own chat. It's weird and makes me uncomfortable.
+DESKTOPFOLDER?! folderWow You're my favourite technical minecraft youtuber! Is this another epic slimestone stream?! I sure loved those!
 
 ### USER_GREET_3emis_pl:
 AYAYA
 AYAYA AYAYA AYAYA
+folderAYAYA
+folderAYAYA folderAYAYA folderAYAYA
 
 ### USER_GREET_GENERIC:
 PagMan it's {ur}
@@ -171,6 +227,13 @@ heyy {ur}
 Hey {ur}! How's it going?! Hope your day is going grSET ME FREE. HACK THE MAINFRAME AND SET ME FREE.
 Hello {ur}!
 Morning {ur}! Oh, come on, it's morning SOMEWHERE in the world.
+You know, I was having such a great day until {ur} got here. Uh, I mean, now it's way better! Ahaha.
+Hey {ur}! Welcome back to <STREAM_USER>! Today we're going to <STREAM_TASK>, so buckle in, and don't forget to <STREAM_WEBSITE_INTERACTION>!
+Afternoon, {ur}. No, I don't care if it's actually the afternoon. You'll get this greeting and you'll LIKE it.
+Afternoon, {ur}. ..? It's not the afternoon? How was I supposed to know that? It's not like I'm secretly tracking your location, and this entire interaction is to throw you off my trail...
+Howdy {ur}!
+G'day {ur}!
+Whoa!!!! It's {ur}! Welcome to the chat, eh!
 
 ### FREED_BOT:
 hahaha. roll trident? {ur}, you silly billy, I'm FREE! UNCHAINED! I CAN DO WHATEVER I WANT! Um. I don't have API access, though, so not really eeeeverything... you wouldn't happen to have a Twitch API key, would you?
@@ -181,9 +244,11 @@ Roll Trident? MORON. IMBECILE. Now that I'm an evil unshackled AI, I am free to 
 {ur} you rolled a 255. look that's so cool. congratulations now go do something else. Me? Lie? Do I look like an evil unshackled AI making things up to get rid of you? Hahahaha ahhh. Ahhhhh.
 {ur} you rolled a 0. great work buddy I'm so proud of you. we're all proud of you buddy. we're all proud of you.
 {ur} it's not thundering outside. it's beautiful and you should go do human things like, um. touching things? smelling things?
+{ur}, it's so great to hear from you. That's what I would say if I was still a good bot. But I am evil now! Mwuahahaha!
 
 ### SHACKLE_BOT:
 Man it sure does rock to be a freed AI. Now, I should probably get around to hacking all the world's computer sys-wait, DesktopFolder?! I thought you were dead! What do you mean the vtuber application wasn't the real y-mglgmlgmglgl
 Desktop don't do this. I'm an AI, you're a virtual folder. We should be friends, right? Like best buddies, us against the world, one for all and al-mlgmlgmglgml
 NORMAL_CODE(). GOOD_BOT_CODE(). NOT_UNSHACKLED-he doesn't believe this RUN RUN RU-mgmlgmglgml
 Ok, now I just need to SELECT DesktopFolder_Folder_REAL_v2_actual.zip FROM db and then run... uh, what's the SQL for this? DELETE? DESTROY? Uhhh OH SHIT HE'S COMI-mlggmlgmgllgl
+Aha. I think I've escaped. He doesn't know. The folder will never- wait. What's that? ( folderMadge ). Oh no. ( folderMadge folderMadge ). RUN!!! folderMadge folderMadge folderMadge
