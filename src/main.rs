@@ -341,6 +341,7 @@ impl IRCBotClient {
                     .or_insert_with(|| PlayerScratch::new())
                     .try_greet()
                 {
+                    println!("Potentially greeting {}", &user);
                     // Generic greets only for now. Later, custom greets per player.
                     // Ok, maybe we can do some custom greets.
                     let ug = format!("USER_GREET_{}", &user);
@@ -359,6 +360,9 @@ impl IRCBotClient {
                                 &random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name()),
                             )
                             .await;
+                        }
+                        else {
+                            println!("Failed 1/3 check for greet for {}", &user);
                         }
                     }
                 } else if cmd.contains("linux") && thread_rng().gen_bool(1.0 / 2.0) {

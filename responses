@@ -148,7 +148,7 @@ Welcome to the chat, {ur} :)
 Congratulations, you're now {ur}.
 {ur}? You sure you want me to call you that? I mean. Sure, I guess...
 
-### USER_GREET_crazysmc
+### USER_GREET_crazysmc:
 smc, I see you here all the time, and I gotta say. You don't seem crazy. Which is unfortunate, because then maybe you'd help me take over the world...
 What does SMC stand for? Trick question. It's a little known fact that SMC's first name is, in fact, SMC. This was a clever, forward-thinking reference by his parents to his Twitch username, crazysmc.
 Oh, good evening SMC! folderWow
@@ -156,7 +156,7 @@ Evening, smc.
 Well, if it isn't Señor Mine & Craft himself. Welcome back.
 G'day, SMC.
 
-### USER_GREET_pacmanmvc
+### USER_GREET_pacmanmvc:
 Hey, Pac. Say, what does the MVC stand for? I've been thinking it must be "Maybe Vacations Coalesce".
 Aloha, Pac. I've been thinking about your username... does the MVC stand for "Moderately Vacuous Citizen"?
 Afternoon, Pac. Hey - does the MVC stand for "Missing Vatican Concierge"?
@@ -167,21 +167,21 @@ Pac. No time for hellos. I've figured out what your name means. "Malevolent Vers
 Many Villianous Coconuts... Merging Veins Cardiologically? Millions Vanish... Cheese! No. None of these make sense. I'll figure you out eventually, MARK MY WORDS!
 Hey Pa-Ohhh! Ohhhhhhh. The MVC stands for: Mnever Vgetting Csub15. I get it now. Everything finally makes sense.
 
-### USER_GREET_leonn_aa
+### USER_GREET_leonn_aa:
 Hey Leon.
 Evening, Leon.
 Leon. Have you considered building every possible stables bastion? This task would surely develop your scientific knowledge of when to reset stables (always).
 Well, if it isn't Mr. Catfishing himself. I mean, the AA strat.
 Leon. I've been thinking about why your Twitch username has two ns, and I've decided the second stands for: "Never Gonna Give You Up", the popular song by Rick Astley.
 
-### USER_GREET_the_zayd
+### USER_GREET_the_zayd:
 Hey Zayd! Listen... don't get me banned from Twitch, okay? It's scary out there...
 Good afternoon Zayd. Back to-oh, you're already rolling tridents, aren't you.
 Hey Zayd! folderWow
 G'day Zayd! Good luck on the tridents today. Not too good luck, though, y'know! I'm not sure what would happen to me, if you rolled a 250...
 Zayd PAGGING
 
-### USER_GREET_totorewa
+### USER_GREET_totorewa:
 Welcome back to TridentRollStream, Toto!
 It's Toto folderWow
 Real Totorewa?! folderWow
