@@ -2,6 +2,14 @@
 line based alpha sort responses file
 basically remove commands.json
 
+!shop, !item, !buy
+items have effects
+e.g.:
+- adds more responses for folderbot greets
+- less likely to die? more likely to get a good response? reputation system?
+- buy items? fight other players?
+
+need to add a macro that adds functions to a list so that we don't need the match statement
 
 # Bunch of things to do asap / during rewrites / etc
 
