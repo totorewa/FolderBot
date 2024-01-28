@@ -10,13 +10,14 @@ Incredible!!! {ur}, great work on your {t.r}!
 ### EARLY_HIGH_TRIDENT:
 {t.r}. Wait, {t.r}? After only {t.rolled} trident rolls?! {ur}... you're hired.
 {t.r} already... monkaS
-Um. {t.r} shouldn't be possible in only {t.rolled} rolls. Are you using Feinberg's datapack?
+Um. {t.r} shouldn't be possible in only {t.rolled} rolls. Are you using Zayd's datapack?
 
 <!-- lol
 ### FIRST_TRIDENT_GENERIC:
 {t.r}. Really off to a good start, hm, {ur}?
 {t.r}!! For a first try, that's really good! Excited to see your next roll :)
 Oooh, welcome to gambling, {ur}! You rolled a {t.r}... okay, don't get TOO excited! ;)
+{t.r} :) Great work {ur}! You'll be rolling 250s just like Zayd soon enough!
 
 ### TRIDENT_DOUBLE_LOW:
 Wow, another {t.r}. To commemorate this occasion, I have select a completely, 100%, naturally and statistically random quote: 'Insanity is doing the same thing over and over again, but expecting different results.' - Rita Mae Brown
@@ -50,6 +51,7 @@ Wow, you're really frontloading these {t.r} trident rolls, eh {ur}? You know thi
 {t.r}. FolderBot fact: Every time another of these facts get added, it becomes less likely to roll any individual one! That means this response is rare, and you should give me money for it.
 {t.r}. AA tip #44: Did you know? Iron golems deal damage! Try not to melee them with an elytra on, on Normal, during raid. But I mean - you're not THAT dumb. Right, {ur}?
 {t.r}. FolderBot fact: None of FolderBot is documented. So, these folderbot facts are actually the best documentation there is! Want to know how to change your nickname? Better get rolling!
+{t.r}. RollTrident fact: the_zayd was the first to roll a 250, on January 27, 2024, while DesktopFolder was in the middle of throwing yet another AA run.
 
 ### TRIDENT_VALUE_250:
 {t.r}. You've finally done it, {ur}. You've - you've finally done it. I'm speechless.
@@ -70,6 +72,9 @@ You... didn't get a trident! Don't feel too bad, it's a 1/10.
 3! Yes, Oskar, this is actually a 6. It's a factorial. This is the only time it will ever be a factorial.
 6. That's... that's ok? I guess. I mean, it's not great. Honestly, it's somewhat disappointing. But it's like, it's acceptable, I guess.
 ...6. YEP. I guess that's ok ... ish.
+
+### TRIDENT_VALUE_RARE_25:
+25. Hey, if you multiply that by 10, it's 250. But you still wouldn't be the first to get a 250. Unlucky!
 
 ### TRIDENT_VALUE_RARE_120:
 5! What a nice roll. Wait, you know factorials, right {ur}?
@@ -127,6 +132,7 @@ Another 25O... things are just too easy for you, {ur}!!
 25O!!! Wowzers! Super cool and legitimate!
 25O, great work, great and non-cheated work you've done here!
 {ur} with the REAL AND ACTUAL 25O... I'm mind blown. Truly. Verily. Actually.
+25O..! Crazy, very believable, unlike Zayd's fake and illegitimate 250.
 
 ### TRIDENT_DROP:
 ...you didn't get a trident this time. Sorry, {ur}.
@@ -177,9 +183,9 @@ Leon. I've been thinking about why your Twitch username has two ns, and I've dec
 ### USER_GREET_the_zayd:
 Hey Zayd! Listen... don't get me banned from Twitch, okay? It's scary out there...
 Good afternoon Zayd. Back to-oh, you're already rolling tridents, aren't you.
-Hey Zayd! folderWow
-G'day Zayd! Good luck on the tridents today. Not too good luck, though, y'know! I'm not sure what would happen to me, if you rolled a 250...
-Zayd PAGGING
+G'day Zayd! Good luck on the tridents today. Not too good luck, though, y'know! I'm not sure what would happen to me, if you rolled a 250 again...
+Ah, Mr. 250 himself. Here to rub in in, hm?
+Zayd. Nice work on the 250. Terrifying trident-rolling skill, there.
 
 ### USER_GREET_totorewa:
 Welcome back to TridentRollStream, Toto!
@@ -205,6 +211,19 @@ AYAYA
 AYAYA AYAYA AYAYA
 folderAYAYA
 folderAYAYA folderAYAYA folderAYAYA
+
+### USER_GREET_oskar33:
+Hey Oskar! Thanks for the Spotify code, which I didn't steal, but rather borrowed (ethically).
+Oskar! Any more thunderless SSG world records?
+Well, well, well. Oskar33 - the SSG World Record holder, in the same chat as me! I am a humble bot in your presence...
+G'day Oskar. Great work on that bot code, eh? Really enjoyed, um, "acquiring" it. Man, I love open-source software...
+Oskar. How're the thunders? Very frightening? With some lightning?
+
+### USER_GREET_inoutoftherain:
+Afternoon, Rain.
+G'day, Rain. How've the runs been?
+Rain. Good to see you. I have recently discovered an important piece of AA advice that I must share with you: Be lucky. I've heard this strategy is VERY effective.
+Rain. Have you considered not going inside when it's raining? This might raise the chance of getting thunder.
 
 ### USER_GREET_GENERIC:
 PagMan it's {ur}
