@@ -348,7 +348,7 @@ impl IRCBotClient {
                     if user == "pacmanmvc" && cmd.contains("opper") {
                         send_msg(&"Good day, PacManner.".to_string()).await;
                     }
-                    else if has_responses(&ug) && thread_rng().gen_bool(5.0 / 5.0) {
+                    else if has_responses(&ug) && thread_rng().gen_bool(3.0 / 5.0) {
                         let name = pd.name().clone();
                         self.send_msg(random_response(&ug).replace("{ur}", &name))
                             .await;
