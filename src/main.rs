@@ -88,7 +88,7 @@ fn bad_eval(s: String) -> String {
                         .map_or("Um... no, but nice try.".to_string(), |v| v.to_string()),
                     "/" => a
                         .checked_div(b)
-                        .map_or("152. xD".to_string(), |v| v.to_string()),
+                        .map_or("153. xD".to_string(), |v| v.to_string()),
                     "-" => a
                         .checked_sub(b)
                         .map_or("...why.".to_string(), |v| v.to_string()),
@@ -952,26 +952,12 @@ impl IRCBotClient {
                                 &self.channel,
                             ))
                             .await;
-                        let _ = self
-                            .sender
-                            .send(TwitchFmt::privmsg(
-                                &format!("/timeout {} 10", &user),
-                                &self.channel,
-                            ))
-                            .await;
                     } else if res == 1 {
                         let _ = self
                             .sender
                             .send(TwitchFmt::privmsg(
                                 &BAD_STRS[rng.gen_range(0..BAD_STRS.len())]
                                     .replace("{}", &pd.name()),
-                                &self.channel,
-                            ))
-                            .await;
-                        let _ = self
-                            .sender
-                            .send(TwitchFmt::privmsg(
-                                &format!("/timeout {} 15", &user),
                                 &self.channel,
                             ))
                             .await;
