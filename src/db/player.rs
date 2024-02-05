@@ -38,6 +38,16 @@ pub struct Player {
     // Enchant metadata
     #[serde(default)]
     pub enchants_rolled: u64,
+
+    // Gunpowder metadata
+    #[serde(default)]
+    pub gp_rolled: u64,
+    #[serde(default)]
+    pub gp_acc: u64,
+    #[serde(default)]
+    pub best_gp: u64,
+    #[serde(default)]
+    pub max_gp_rolled: u32,
 }
 
 #[derive(Default)]
@@ -45,6 +55,7 @@ pub struct PlayerScratch {
     pub last_trident: i32,
     pub greeted: bool,
     pub trident_response_timer: u64,
+    pub gp_ratelimit: u64,
 }
 
 impl PlayerScratch {
@@ -53,6 +64,7 @@ impl PlayerScratch {
             last_trident: -1,
             greeted: false,
             trident_response_timer: 0,
+            gp_ratelimit: 0,
         }
     }
 

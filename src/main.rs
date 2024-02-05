@@ -750,6 +750,7 @@ impl IRCBotClient {
                     "messages" => |p: &Player| (p.sent_messages - p.sent_commands) as i64,
                     "commands" => |p: &Player| p.sent_commands as i64,
                     "rolled_tridents" => |p: &Player| p.tridents_rolled as i64,
+                    "gunpowder" | "gp" => |p: &Player| p.best_gp as i64,
                     _ => return Command::Continue,
                 };
                 send_msg(&self.player_data.any_leaderboard(p)).await;
@@ -1104,6 +1105,63 @@ impl IRCBotClient {
                             ))
                             .await;
                     }
+                }
+            }
+            "feature:gunpowder" => {
+                const ROLLS: u16 = 4 * 4; // 4 chests, 4 rolls each
+                const CHANCE_PER_ROLL: f64 = 10.0 / 50.0;
+                const MAX_GP: u64 = 8 * ROLLS as u64;
+
+                let ps = scratch
+                    .entry(user.clone())
+                    .or_insert_with(|| PlayerScratch::new());
+
+                // Limit 1 roll per 2 seconds - extend cooldown if another attempt is made (up to 60 seconds)
+                if tm < ps.gp_ratelimit {
+                    if ps.gp_ratelimit - tm < 60 {
+                        ps.gp_ratelimit += 2;
+                    }
+                    return Command::Continue;
+                }
+                
+                // Roll gunpowder
+                let mut rng = thread_rng();
+                let mut gp: u64 = 0;
+                for _ in 0..ROLLS {
+                    if rng.gen_bool(CHANCE_PER_ROLL) {
+                        gp += rng.gen_range(1..=8);
+                    }
+                }
+
+                // Stats collection
+                pd.gp_rolled += 1;
+                pd.gp_acc += gp;
+                ps.gp_ratelimit = cur_time_or_0() + 2;
+                if gp == MAX_GP {
+                    pd.best_gp = gp;
+                    pd.max_gp_rolled += 1;
+                    send_msg(&format!("{} looted {} gunpowder!! folderWoah That's the maximum gunpowder you can loot! Well done!", pd.name(), gp)).await;
+                } else if gp > pd.best_gp {
+                    if pd.gp_rolled == 1 {
+                        send_msg(&format!("{} received {} gunpowder from their first ever loot!", pd.name(), gp)).await;
+                    } else {
+                        send_msg(&format!("{} looted {} gunpowder! PAGGING That's your new personal best! Your previous best was {} gunpowder.", pd.name(), gp, pd.best_gp)).await;
+                    }
+                    pd.best_gp = gp;
+                } else if gp == 0 {
+                    if rng.gen_bool(1.0 / 3.0) {
+                        pd.deaths += 1;
+                        pd.death = Some(cur_time_or_0());
+                        match rng.gen_range(0..3) {
+                            0 => send_msg(&format!("{} looted 0 gunpowder. monkaFlying They leap from the end ship with their new wings but forgot they didn't get gunpowder and hit the ground hard. RIP", pd.name())).await,
+                            1 => send_msg(&format!("{} looted 0 gunpowder. RESETTING They rage quit and die from embarrassment.", pd.name())).await,
+                            2 | _ => send_msg(&format!("{} looted 0 gunpowder. Feeling bad, a creeper approaches you offering gunpowd- oh nevermind. IMDEAD", pd.name())).await,
+                        }
+                    } else {
+                        send_msg(&format!("{} looted 0 gunpowder. oof RESETTING", pd.name())).await;
+                    }
+                } else {
+                    send_msg(&format!("{} looted {} gunpowder.", pd.name(), gp)).await;
                 }
             }
             "admin:mute" => {
