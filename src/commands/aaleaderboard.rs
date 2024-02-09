@@ -92,8 +92,8 @@ impl AALeaderboard {
         }
 
         let lb = return_if_err!(self.get_data());
-        let normalized_name = &lb.leaderboard[rank as usize - 1];
-        AALeaderboard::info_for_normalized_name(lb, normalized_name)
+        lb.leaderboard.get(rank as usize - 1)
+            .and_then(|n| AALeaderboard::info_for_normalized_name(lb, n))
             .unwrap_or_else(|| format!("Umm, for some reason I can't find a player at rank {}... folderWoah", rank))
     }
 
