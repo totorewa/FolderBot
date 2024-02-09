@@ -24,6 +24,7 @@ use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
 
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
+use folderbot::commands::aaleaderboard::AALeaderboard;
 use folderbot::commands::mcsr::lookup;
 use folderbot::db::game::GameState;
 use folderbot::db::player::{Player, PlayerData, PlayerScratch};
@@ -187,6 +188,7 @@ struct IRCBotClient {
     autosave: bool,
     spotify: SpotifyChecker,
     player_data: PlayerData,
+    aa_leaderboard: AALeaderboard,
 }
 
 // Class that receives messages, then sends them.
@@ -244,6 +246,7 @@ impl IRCBotClient {
                 autosave: false,
                 spotify: SpotifyChecker::new().await,
                 player_data: PlayerData::new(),
+                aa_leaderboard: AALeaderboard::new(),
             },
             IRCBotMessageSender {
                 writer: stream,
@@ -1163,6 +1166,25 @@ impl IRCBotClient {
                 } else {
                     send_msg(&format!("{} looted {} gunpowder.", pd.name(), gp)).await;
                 }
+            }
+            "feature:aaleaderboard" => {
+                self.aa_leaderboard.fetch_if_required().await;
+                let trimmed_args = args.trim(); // get random spaces at end of messages sometimes
+                let msg = if trimmed_args.is_empty() {
+                    format!("{}. Try \"!aalb top\" to see the top 5 runs. You can also search a rank or player with \"!aalb <rank/name>\".", self.aa_leaderboard.info_for_streamer())
+                } else if trimmed_args == "top" {
+                    self.aa_leaderboard.top_info()
+                } else if trimmed_args == "stat" {
+                    self.aa_leaderboard.last_update()
+                } else {
+                    // if someone has a username that's all numbers, lol gg
+                    match trimmed_args.parse::<u32>().ok() {
+                        Some(rank) => self.aa_leaderboard.info_at_rank(rank),
+                        None => self.aa_leaderboard.info_for_name(trimmed_args.to_string()),
+                    }
+                };
+
+                send_msg(&msg).await;
             }
             "admin:mute" => {
                 self.audio.volume_default(0.0);
