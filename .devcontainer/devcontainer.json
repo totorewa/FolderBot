@@ -1,0 +1,13 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/rust:1-bullseye",
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				"rust-lang.rust-analyzer",
+                "tamasfe.even-better-toml",
+                "vadimcn.vscode-lldb"
+			]
+		}
+	}
+}
