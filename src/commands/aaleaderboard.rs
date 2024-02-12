@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use itertools::Itertools;
+use rand::{thread_rng, Rng};
 
 macro_rules! return_if_err {
     ($e:expr) => {
@@ -16,7 +17,7 @@ macro_rules! return_if_err {
 
 const DEFAULT_SPREADSHEET_ID: &str = "107ijqjELTQQ29KW4phUmtvYFTX9-pfHsjb18TKoWACk";
 const DEFAULT_WORKSHEET_ID: i64 = 1706556435;
-const STREAMER_NAME: &str = "desktopfolder";
+const STREAMER_NAME: &str = "DesktopFolder";
 
 struct AAPlayer {
     name: String,
@@ -109,10 +110,16 @@ impl AALeaderboard {
 
     pub fn top_info(&self) -> String {
         let lb = return_if_err!(self.get_data());
-        let top5 = lb.leaderboard
+        let fake = thread_rng().gen_bool(1.0 / 8.0);
+        let top5 = lb
+            .leaderboard
             .iter()
             .take(5)
-            .map(|p| p.to_string())
+            .map(if fake {
+                |p: &Arc<AAPlayer>| format!("{} ({})", &STREAMER_NAME, p.igt)
+            } else {
+                |p: &Arc<AAPlayer>| p.to_string()
+            })
             .join(" | ");
         format!("Top 5 AA runs: {}", top5)
     }
