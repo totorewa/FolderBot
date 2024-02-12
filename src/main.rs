@@ -1169,7 +1169,7 @@ impl IRCBotClient {
             }
             "feature:aaleaderboard" => {
                 self.aa_leaderboard.fetch_if_required().await;
-                let trimmed_args = args.trim_matches(|c: char| !c.is_alphanumeric()); // get random characters at end of messages sometimes
+                let trimmed_args = args.trim(); // get random spaces at end of messages sometimes
                 let msg = if trimmed_args.is_empty() {
                     format!("{}. Try \"!aalb top\" to see the top 5 runs. You can also search a rank or player with \"!aalb <rank/name>\".", self.aa_leaderboard.info_for_streamer())
                 } else if trimmed_args == "top" {
