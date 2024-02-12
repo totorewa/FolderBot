@@ -1,7 +1,9 @@
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::env;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
-use std::{collections::HashMap, time::{Duration, SystemTime, UNIX_EPOCH}};
+use itertools::Itertools;
 
 macro_rules! return_if_err {
     ($e:expr) => {
@@ -12,27 +14,24 @@ macro_rules! return_if_err {
     };
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+const DEFAULT_SPREADSHEET_ID: &str = "107ijqjELTQQ29KW4phUmtvYFTX9-pfHsjb18TKoWACk";
+const DEFAULT_WORKSHEET_ID: i64 = 1706556435;
+const STREAMER_NAME: &str = "desktopfolder";
+
 struct AAPlayer {
     name: String,
     rank: u32,
-    #[serde(rename = "runTime")]
     igt: String,
-    // #[serde(rename = "dateAccomplished")]
-    // date: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct APIResponse {
-    players: HashMap<String, AAPlayer>,
-    leaderboard: Vec<String>,
-    #[serde(rename = "lastUpdated")]
-    last_updated: String,
+struct AALeaderboardData {
+    players: HashMap<String, Arc<AAPlayer>>,
+    leaderboard: Vec<Arc<AAPlayer>>,
 }
 
 #[derive(Default)]
 pub struct AALeaderboard {
-    data: Option<APIResponse>,
+    data: Option<AALeaderboardData>,
     next_fetch: Option<SystemTime>,
 }
 
@@ -41,6 +40,12 @@ impl std::fmt::Display for AAPlayer {
         let name = &self.name;
         let igt = &self.igt;
         write!(f, "{} ({})", name, igt)
+    }
+}
+
+impl AAPlayer {
+    fn to_rank_info(&self) -> String {
+        format!("#{}: {}", self.rank, self)
     }
 }
 
@@ -58,28 +63,25 @@ impl AALeaderboard {
     }
 
     pub async fn fetch(&mut self) {
-        const URL: &str = "https://totorewa.github.io/aa-leaderboard/1-16-1.json";
         const REFRESH_AFTER: Duration = Duration::from_secs(60 * 60);
         const RETRY_AFTER: Duration = Duration::from_secs(60 * 5);
 
-        let res = match reqwest::get(URL).await {
-            Ok(res) => res,
-            Err(err) => {
-                println!("{}", err);
-                return
-            }
-        };
-        match res.json::<APIResponse>().await {
-            Ok(lb) => {
-                self.data = Some(lb);
-                self.next_fetch = Some(SystemTime::now() + REFRESH_AFTER);
-            },
-            Err(err) => {
-                println!("{}", err);
-                self.data = None;
-                self.next_fetch = Some(SystemTime::now() + RETRY_AFTER);
-            }
-        }
+        let mut dl = LeaderboardDownloader::new(
+            &env::var("RAA_LEADERBOARD_SPREADSHEET_ID")
+                .unwrap_or_else(|_| DEFAULT_SPREADSHEET_ID.to_string()), 
+            env::var("RAA_LEADERBOARD_WORKSHEET_ID")
+                .ok()
+                .and_then(|v| v.parse::<i64>().ok())
+                .unwrap_or(DEFAULT_WORKSHEET_ID),
+        );
+
+        self.data = dl.fetch().await;
+        self.next_fetch = Some(SystemTime::now() + self.data.as_ref().map(|_| REFRESH_AFTER).unwrap_or(RETRY_AFTER));
+    }
+
+    pub fn unload(&mut self) {
+        self.next_fetch = None;
+        self.data = None;
     }
 
     pub fn is_loaded(&self) -> bool {
@@ -87,25 +89,21 @@ impl AALeaderboard {
     }
 
     pub fn info_at_rank(&self, rank: u32) -> String {
-        if rank < 1 || rank > 100 {
-            return "Sorry, I only keep track of the top 100 players.".to_string();
-        }
-
         let lb = return_if_err!(self.get_data());
         lb.leaderboard.get(rank as usize - 1)
-            .and_then(|n| AALeaderboard::info_for_normalized_name(lb, n))
-            .unwrap_or_else(|| format!("Umm, for some reason I can't find a player at rank {}... folderWoah", rank))
+            .map(|p| p.to_rank_info())
+            .unwrap_or_else(|| format!("I can't find a player at #{}. Hmmge", rank))
     }
 
     pub fn info_for_name(&self, name: String) -> String {
         let lb = return_if_err!(self.get_data());
         let normalized_name = name.trim().to_lowercase();
-        AALeaderboard::info_for_normalized_name(lb, &normalized_name)
+        lb.players.get(&normalized_name)
+            .map(|p| p.to_rank_info())
             .unwrap_or_else(|| format!("Sorry, I don't know who {} is. shrujj", name))
     }
 
     pub fn info_for_streamer(&self) -> String {
-        const STREAMER_NAME: &str = "desktopfolder";
         self.info_for_name(STREAMER_NAME.to_string())
     }
 
@@ -114,53 +112,86 @@ impl AALeaderboard {
         let top5 = lb.leaderboard
             .iter()
             .take(5)
-            .map(|p| lb.players
-                    .get(p)
-                    .map(|p| p.to_string())
-                    .unwrap_or_else(|| "MISSING???".to_string()))
+            .map(|p| p.to_string())
             .join(" | ");
         format!("Top 5 AA runs: {}", top5)
     }
 
-    pub fn last_update(&self) -> String {
-        const GENERIC_ERROR_RESPONSE: &str = "I couldn't figure out when my leaderboard was last updated";
-        let lb = return_if_err!(self.get_data());
-
-        let ts = return_if_err!(lb.last_updated.parse::<u64>().map_err(|_| GENERIC_ERROR_RESPONSE.to_string()));
-
-        let time = UNIX_EPOCH + Duration::from_secs(ts);
-        let dur_since = return_if_err!(SystemTime::now().duration_since(time).map_err(|_| GENERIC_ERROR_RESPONSE.to_string())).as_secs();
-        // super super lazy duration formatting
-        let relativity = if dur_since >= 86400 { // a day
-                "more than a day ago"
-            } else if dur_since >= 43200 { // 12 hours
-                "more than 12 hours ago"
-            } else if dur_since >= 21600 { // 6 hours
-                "more than 6 hours ago"
-            } else if dur_since >= 7200 { // 2 hours
-                "more than 2 hours ago"
-            } else if dur_since >= 3600 { // 1 hour
-                "about an hour ago"
-            } else if dur_since > 0 {
-                "less than an hour ago"
-            } else if dur_since == 0 {
-                "now, somehow???"
-            } else {
-                "in the future somehow???"
-            };
-        format!("My AA leaderboard was last updated {}", relativity)
-    }
-
-    fn get_data(&self) -> Result<&APIResponse, String> {
+    fn get_data(&self) -> Result<&AALeaderboardData, String> {
         self.data
             .as_ref()
             .ok_or_else(|| "The AA Leaderboard is not loaded. sajj".to_string())
     }
-
-    fn info_for_normalized_name(data: &APIResponse, normalized_name: &String) -> Option<String> {
-        data.players
-            .get(normalized_name)
-            .map(|p| format!("#{}: {}", p.rank, p))
-    }
 }
 
+struct LeaderboardDownloader {
+    url: String,
+    csv: Option<String>,
+}
+
+impl LeaderboardDownloader {
+    fn new(spreadsheet_id: &String, worksheet_id: i64) -> Self {
+        Self {
+            url: Self::make_export_url(spreadsheet_id, worksheet_id),
+            csv: None,
+        }
+    }
+
+    async fn fetch(&mut self) -> Option<AALeaderboardData> {
+        self.fetch_csv().await;
+        let csv = self.csv.as_ref()?;
+        let lines = csv.split('\n').collect_vec();
+
+        let mut rank_idx = 0;
+        let mut name_idx = 2;
+        let mut igt_idx = 3;
+        for (i, cell) in lines.get(1)?.split(',').enumerate() {
+            match cell {
+                "#" => rank_idx = i,
+                "Runner" => name_idx = i,
+                "IGT" => igt_idx = i,
+                _ => continue,
+            }
+        }
+
+        let mut players = HashMap::<String, Arc<AAPlayer>>::new();
+        let mut leaderboard = Vec::<Arc<AAPlayer>>::new();
+        for line in lines.iter().skip(2) {
+            if line.is_empty() { break }
+            let mut rank = 0;
+            let mut name = "";
+            let mut igt = "";
+            for (i, cell) in line.split(',').enumerate() {
+                if i == rank_idx {
+                    rank = cell.parse::<u32>().unwrap_or(rank)
+                } else if i == name_idx {
+                    name = cell.clone()
+                } else if i == igt_idx {
+                    igt = cell.clone()
+                }
+            }
+            let player = Arc::new(AAPlayer { name: name.to_string(), rank, igt: igt.to_string() });
+            players.insert(name.trim().to_lowercase(), player.clone());
+            leaderboard.push(player.clone());
+        }
+        
+        Some(AALeaderboardData { players, leaderboard })
+    }
+
+    async fn fetch_csv(&mut self) -> bool {
+        if self.csv.is_some() { return true }
+        if let Ok(res) = reqwest::get(&self.url).await {
+            self.csv = res.text().await.ok();
+            return self.csv.is_some()
+        }
+        return false
+    }
+
+    fn make_export_url(spreadsheet_id: &str, worksheet_id: i64) -> String {
+        format!(
+            "https://docs.google.com/spreadsheets/d/{}/export?gid={}&format=csv",
+            spreadsheet_id, worksheet_id
+        )
+    }
+
+}
