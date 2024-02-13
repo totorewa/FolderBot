@@ -1169,13 +1169,14 @@ impl IRCBotClient {
             }
             "feature:aaleaderboard" => {
                 self.aa_leaderboard.fetch_if_required().await;
-                let trimmed_args = args.trim(); // get random spaces at end of messages sometimes
+                let trimmed_args = args.trim_right_matches(|c: char| !c.is_ascii() || c.is_whitespace()); // get random characters at end of messages sometimes
                 let msg = if trimmed_args.is_empty() {
                     format!("{}. Try \"!aalb top\" to see the top 5 runs. You can also search a rank or player with \"!aalb <rank/name>\".", self.aa_leaderboard.info_for_streamer())
                 } else if trimmed_args == "top" {
                     self.aa_leaderboard.top_info()
-                } else if trimmed_args == "stat" {
-                    self.aa_leaderboard.last_update()
+                } else if trimmed_args == "reload" && self.ct.admins.contains(&user) {
+                    self.aa_leaderboard.unload();
+                    "OK, I will reload the leaderboard folderSus".to_string()
                 } else {
                     // if someone has a username that's all numbers, lol gg
                     match trimmed_args.parse::<u32>().ok() {
