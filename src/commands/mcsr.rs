@@ -2,39 +2,59 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_with::DefaultOnError;
 
-use std::collections::HashMap;
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct MCSRTimestamp {
+    #[serde_as(deserialize_as = "DefaultOnError")]
+    first_online: i64,
+    #[serde_as(deserialize_as = "DefaultOnError")]
+    last_online: i64,
+    #[serde_as(deserialize_as = "DefaultOnError")]
+    last_ranked: i64,
+}
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
-struct MCSRRecord {
-    #[serde_as(deserialize_as = "DefaultOnError")]
-    win: f64,
-    #[serde_as(deserialize_as = "DefaultOnError")]
-    lose: f64,
-    #[serde_as(deserialize_as = "DefaultOnError")]
-    draw: f64,
+struct MCSRStat {
+    ranked: Option<i64>,
+    casual: Option<i64>,
 }
+
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct MCSRStatistics {
+    best_time: MCSRStat,
+    highest_win_streak: MCSRStat,
+    current_win_streak: MCSRStat,
+    played_matches: MCSRStat,
+    playtime: MCSRStat,
+    forfeits: MCSRStat,
+    completions: MCSRStat,
+    wins: MCSRStat,
+    loses: MCSRStat,
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug)]
+struct MCSRStatData {
+    season: MCSRStatistics,
+    total: MCSRStatistics,
+}
+
 // USEFUL SERDE DOCS
 // https://serde.rs/enum-representations.html
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MCSRData {
     uuid: String,
     nickname: String,
-    //#[serde_as(deserialize_as = "DefaultOnError")]
-    //badge: i64,
-    elo_rate: i64,
+    elo_rate: Option<i64>,
     elo_rank: Option<i64>,
-    created_time: i64,
-    latest_time: i64,
-    total_played: i64,
-    season_played: i64,
-    highest_winstreak: i64,
-    current_winstreak: i64,
-    prev_elo_rate: i64,
-    best_elo_rate: i64,
-    best_record_time: i64,
-    records: HashMap<String, MCSRRecord>,
+    timestamp: MCSRTimestamp,
+    statistics: MCSRStatData,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct MCSRAPIResponse {
@@ -42,25 +62,21 @@ struct MCSRAPIResponse {
     data: MCSRData,
 }
 
-impl MCSRData {
+impl MCSRStatistics {
     fn win_loss(&self) -> String {
-        match self.records.get("2") {
-            /*
-            Some(MR) => match (MR.win.parse::<f64>(), MR.lose.parse::<f64>()) {
-                (Ok(w), Ok(l)) => {
-                    format!("[{} - {} ({:.2}%)]", MR.win, MR.lose, w * 100.0 / (l + w))
-                }
-                _ => format!("[{} - {}]", MR.win, MR.lose),
-            },
-            */
-            Some(mcsr_record) => format!(
-                "[{} - {} ({:.2}%)]",
-                mcsr_record.win,
-                mcsr_record.lose,
-                mcsr_record.win * 100.0 / (mcsr_record.lose + mcsr_record.win)
-            ),
-            None => "[No data]".to_string(),
-        }
+        self.wins
+            .ranked
+            .and_then(|wins| self.loses.ranked.map(|loses| (wins, loses)))
+            .filter(|(w, l)| w + l != 0)
+            .map(|(w, l)| {
+                format!(
+                    "[{} - {} ({:.2}%)]",
+                    w,
+                    l,
+                    (w as f64 * 100.0) / (l as f64 + w as f64)
+                )
+            })
+            .unwrap_or_else(|| "[No data]".to_string())
     }
 }
 pub async fn lookup(args: String) -> String {
@@ -72,12 +88,13 @@ pub async fn lookup(args: String) -> String {
         match r.json::<MCSRAPIResponse>().await {
             Ok(j) => {
                 format!(
-                    "Elo for {0}: {1} (Rank #{2}) Season games: {3} {4} Graph -> https://disrespec.tech/elo/?username={0}",
+                    "Elo for {0}: {1} (Rank #{2}) Season games: {3} {4} Graph -> https://mcsrranked.com/profile/{5}",
                     un,
-                    j.data.elo_rate,
-                    j.data.elo_rank.unwrap_or(-1),
-                    j.data.season_played,
-                    j.data.win_loss(),
+                    j.data.elo_rate.map(|r| r.to_string()).unwrap_or("N/A".to_string()),
+                    j.data.elo_rank.map(|r| r.to_string()). unwrap_or("N/A".to_string()),
+                    j.data.statistics.season.played_matches.ranked.unwrap_or(0),
+                    j.data.statistics.season.win_loss(),
+                    j.data.nickname,
                 )
             }
             Err(e) => {
