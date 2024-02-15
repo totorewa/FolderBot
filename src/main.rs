@@ -8,6 +8,7 @@ use async_std::{
 };
 use async_trait::async_trait;
 use futures::{select, FutureExt};
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use rand::{thread_rng, Rng};
 use regex::Regex;
@@ -640,6 +641,40 @@ impl IRCBotClient {
             "meta:save_commands" => {
                 log_res("Saving commands to commands.json");
                 self.ct.dump_file(Path::new("commands.json"));
+            }
+            "meta:whois" => {
+                let name = args.trim().to_lowercase();
+                if name.is_empty() {
+                    send_msg(&"Who's who? Where am I?".to_string()).await;
+                    return Command::Continue;
+                }
+
+                let matches = self
+                    .player_data
+                    .players
+                    .iter()
+                    .filter(|e| {
+                        e.0 == &name
+                            || e.1
+                                .nick
+                                .as_ref()
+                                .map(|n| n.to_lowercase() == name)
+                                .unwrap_or_default()
+                    })
+                    .sorted_by_key(|e| e.0)
+                    .map(|e| format!("{} ({})", e.1.name(), e.0))
+                    .join(", ");
+
+                if matches.is_empty() {
+                    send_msg(&format!("There's no one called {} here folderSus", name)).await;
+                } else {
+                    let msg = if matches.len() <= 256 { // actual limit is 500
+                        matches
+                    } else {
+                        format!("{:.253}...", matches)
+                    };
+                    send_msg(&format!("Here's what I could find: {}", msg)).await;
+                }
             }
             "game:bet_for" => {
                 log_res("Bet that it works!");
