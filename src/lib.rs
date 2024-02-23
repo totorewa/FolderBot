@@ -6,6 +6,7 @@ pub mod responses;
 pub mod enchants;
 pub mod spotify;
 pub mod trident;
+pub mod yahtzee;
 
 // Collect miscellanous command responses.
 pub mod commands;
