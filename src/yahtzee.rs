@@ -42,7 +42,6 @@ struct GamePlayer {
 #[derive(Serialize, Deserialize)]
 pub struct Yahtzee {
     players: HashMap<String, GamePlayer>,
-    global_cooldown: u64,
     turn_cooldown: u64,
 
     #[serde(default, skip_serializing)]
@@ -277,7 +276,6 @@ impl Yahtzee {
         Self {
             players: HashMap::new(),
             path: save_path.to_path_buf(),
-            global_cooldown: 1000,
             turn_cooldown: 10000,
             last_roll: 0,
         }
@@ -346,12 +344,6 @@ impl Yahtzee {
     }
 
     pub fn play(&mut self, player_name: &str, saves: &[u8]) -> Result<String, YahtzeeError> {
-        if get_unixtime() - self.last_roll < self.global_cooldown {
-            return Err(YahtzeeError::private(
-                &"Could not play Yatzee because the global cooldown is active",
-            ));
-        }
-
         self.last_roll = get_unixtime();
         let cd = self.turn_cooldown;
         let player = self.get_or_create_player(player_name);
