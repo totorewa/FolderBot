@@ -34,6 +34,7 @@ use folderbot::game::Game;
 use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
 use folderbot::trident::{db_random_response, has_responses, random_response};
+use folderbot::yahtzee::YahtzeeError;
 use folderbot::{audio::Audio, trident::db_has_responses};
 
 use serde::{Deserialize, Serialize};
@@ -105,6 +106,16 @@ fn bad_eval(s: String) -> String {
         }
     }
     "Parse failure...".to_string()
+}
+
+fn trim_args_end(args: &str) -> &str {
+    args.trim_end_matches(|c: char| !c.is_ascii() || c.is_whitespace()) // get random characters at end of messages sometimes
+}
+
+fn split_args(args: &str) -> Vec<&str> {
+    args
+        .split_whitespace()
+        .collect::<Vec<&str>>()
 }
 
 enum ReadResult {
@@ -190,6 +201,7 @@ struct IRCBotClient {
     spotify: SpotifyChecker,
     player_data: PlayerData,
     aa_leaderboard: AALeaderboard,
+    yahtzee: Option<folderbot::yahtzee::Yahtzee>,
 }
 
 // Class that receives messages, then sends them.
@@ -248,6 +260,7 @@ impl IRCBotClient {
                 spotify: SpotifyChecker::new().await,
                 player_data: PlayerData::new(),
                 aa_leaderboard: AALeaderboard::new(),
+                yahtzee: folderbot::yahtzee::Yahtzee::load_from_default_file(),
             },
             IRCBotMessageSender {
                 writer: stream,
@@ -425,6 +438,16 @@ impl IRCBotClient {
                 }
             }
         };
+
+        macro_rules! reply_and_continue {
+            ($e:expr) => {
+                let _ = self.sender
+                    .send(TwitchFmt::privmsg($e, &self.channel))
+                    .await;
+                return Command::Continue;
+            };
+        }
+
         lazy_static! {
             static ref COMMAND_RE: Regex = Regex::new(r"^([^\s\w]?)(.*?)\s+(.+)$").unwrap();
         }
@@ -789,6 +812,35 @@ impl IRCBotClient {
                     "commands" => |p: &Player| p.sent_commands as i64,
                     "rolled_tridents" => |p: &Player| p.tridents_rolled as i64,
                     "gunpowder" | "gp" => |p: &Player| p.best_gp as i64,
+                    "yahtzee" => {
+                        // hacky work around to not being able to capture self.yahtzee in the lambda
+                        match self.yahtzee.as_ref() {
+                            Some(y) => {
+                                let lb = self
+                                    .player_data
+                                    .players
+                                    .iter()
+                                    .map(|e| (e.1.name(), y.get_total_yahtzees(e.0)))
+                                    .filter(|t| t.1 > 0)
+                                    .sorted_by_key(|t| t.1)
+                                    .take(10)
+                                    .map(|t| format!("{}: {}", t.0, t.1))
+                                    .join(", ");
+                                if lb.is_empty() {
+                                    let zayd_name = self
+                                        .player_data
+                                        .players
+                                        .get(&"the_zayd".to_string())
+                                        .map(|p| p.name())
+                                        .unwrap_or("Zayd".to_string());
+                                    reply_and_continue!(&format!("{}, probably", zayd_name));
+                                } else {
+                                    reply_and_continue!(&lb);
+                                }
+                            }
+                            None => return Command::Continue,
+                        }
+                    },
                     _ => return Command::Continue,
                 };
                 send_msg(&self.player_data.any_leaderboard(p)).await;
@@ -1207,7 +1259,7 @@ impl IRCBotClient {
                     send_msg(&err).await;
                     return Command::Continue;
                 }
-                let trimmed_args = args.trim_end_matches(|c: char| !c.is_ascii() || c.is_whitespace()); // get random characters at end of messages sometimes
+                let trimmed_args = trim_args_end(&args);
                 let msg = if trimmed_args.is_empty() {
                     format!("{}. Try \"!aalb top\" to see the top 5 runs. You can also search a rank or player with \"!aalb <rank/name>\".", self.aa_leaderboard.info_for_streamer())
                 } else if trimmed_args == "top" {
@@ -1230,6 +1282,63 @@ impl IRCBotClient {
                 };
 
                 send_msg(&msg).await;
+            }
+            "feature:yahtzee" => {
+                let yahtzee = match self.yahtzee.as_mut() {
+                    Some(g) => g,
+                    None => {
+                        println!("Yahtzee game not loaded");
+                        return Command::Continue;
+                    }
+                };
+                let split_args = match trim_args_end(&args) {
+                    "stats" => {
+                        reply_and_continue!(&yahtzee.player_stats(&user));
+                    }
+                    "help" => {
+                        reply_and_continue!(&"Roll all 5 dice with !yahtzee. You can re-roll up to two times by specifying the dice values you wish to save (e.g. !yahtzee 1 4). You only keep the scores that you don't re-roll. View stats with \"!yahtzee stats [name]\".".to_string());
+                    }
+                    "save" => {
+                        if self.ct.admins.contains(&user) {
+                            yahtzee.save()
+                        }
+                        return Command::Continue;
+                    }
+                    trimmed_args => split_args(&trimmed_args),
+                };
+                if split_args.get(0).map(|a| a == &"stats").unwrap_or_default() {
+                    match split_args.get(1) {
+                        Some(a) => {
+                            reply_and_continue!(&yahtzee.player_stats(a));
+                        },
+                        None => return Command::Continue,
+                    }
+                }
+                let saved = split_args
+                    .iter()
+                    .map(|arg| arg.parse::<u8>().ok())
+                    .take_while(|n| n.filter(|n| *n > 0 && *n <= 6).is_some())
+                    .map(|n| n.unwrap())
+                    .collect::<Vec<_>>();
+                if saved.len() >= folderbot::yahtzee::DICE_COUNT {
+                    reply_and_continue!(&"That's too many dice MadgeJuice".to_string());
+                }
+                if saved.len() < split_args.len() {
+                    reply_and_continue!(
+                        &"Umm I don't think those are valid dice rolls majj".to_string()
+                    );
+                }
+                match yahtzee.play(&user, &saved) {
+                    Ok(res) => {
+                        reply_and_continue!(&res);
+                    }
+                    Err(err) => match err {
+                        YahtzeeError::Private(reason) => println!("{}", &reason),
+                        YahtzeeError::Public(display) => {
+                            reply_and_continue!(&display);
+                        }
+                    },
+                }
             }
             "admin:mute" => {
                 self.audio.volume_default(0.0);
@@ -1362,6 +1471,9 @@ impl IRCBotClient {
                         LAST_SAVE.store(tm, Ordering::Relaxed);
                         println!("[Note] Autosaving player data.");
                         self.player_data.save();
+                        if let Some(yahtzee) = &self.yahtzee {
+                            yahtzee.save()
+                        }
                     }
 
                     // First, parse if it's a private message, or a skip/ping/etc.
