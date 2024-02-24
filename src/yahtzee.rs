@@ -28,6 +28,9 @@ struct GamePlayer {
     rolls: u64,
 
     #[serde(default)]
+    total_score: u64,
+
+    #[serde(default)]
     total_yahtzees: u64,
     #[serde(default)]
     best_yahtzee_die: u8,
@@ -68,7 +71,6 @@ impl GameTurn {
                 "Erm you've already re-rolled twice smh",
             ));
         }
-        self.rolls += 1;
         let mut saved_rolls = [0u8; 6];
         for s in saves {
             if let Some(face) = saved_rolls.get_mut(*s as usize - 1) {
@@ -85,12 +87,13 @@ impl GameTurn {
             }
             *die = rng.gen_range(1..=6);
         }
-        if let Some(missing) = saved_rolls.iter().find(|s| **s != 0) {
+        if let Some((face, _)) = saved_rolls.iter().enumerate().find(|s| *s.1 != 0) {
             return Err(YahtzeeError::public(&format!(
                 "Hmmge you don't have enough {} dice",
-                get_dice_face_text(*missing)
+                get_dice_face_text(face as u8 + 1)
             )));
         }
+        self.rolls += 1;
         self.dice = rolls;
         Ok(())
     }
@@ -234,6 +237,7 @@ impl GamePlayer {
             }
             self.turns += 1;
             self.rolls += turn.rolls as u64;
+            self.total_score += turn.score as u64;
             if turn.score == GameTurn::YAHTZEE_SCORE {
                 self.total_yahtzees += 1;
                 self.best_yahtzee_die = max(turn.dice[0], self.best_yahtzee_die);
@@ -255,8 +259,21 @@ impl GamePlayer {
         self.turns + self.current_turn.map(|_| 1u64).unwrap_or_default()
     }
 
+    fn total_score(&self) -> u64 {
+        self.total_score
+            + self
+                .current_turn
+                .map(|t| t.score as u64)
+                .unwrap_or_default()
+    }
+
     fn total_yahtzees(&self) -> u64 {
-        self.total_yahtzees + self.current_turn.filter(|t| t.score == GameTurn::YAHTZEE_SCORE).map(|_| 1u64).unwrap_or_default()
+        self.total_yahtzees
+            + self
+                .current_turn
+                .filter(|t| t.score == GameTurn::YAHTZEE_SCORE)
+                .map(|_| 1u64)
+                .unwrap_or_default()
     }
 
     fn best_score(&self) -> Option<u8> {
@@ -349,11 +366,12 @@ impl Yahtzee {
         let player = self.get_or_create_player(player_name);
         let mut rng = thread_rng();
 
-        let is_rerolling_yahtzee = player
+        let disposed_score = player
             .current_turn
             .as_ref()
-            .map(|t| t.score == GameTurn::YAHTZEE_SCORE)
+            .map(|t| t.score)
             .unwrap_or_default();
+        let is_rerolling_yahtzee = saves.len() > 0 && disposed_score == GameTurn::YAHTZEE_SCORE;
 
         let (rolls, score) = player.play(saves, cd, &mut rng)?;
         let roll_txt = rolls.iter().map(|v| get_dice_face_text(*v)).join(", ");
@@ -372,6 +390,11 @@ impl Yahtzee {
             Ok(format!(
                 "You rolled {} worth a score of {}... wait, did you just re-roll your yahtzee? WHAT",
                 roll_txt, score
+            ))
+        } else if disposed_score != 0 && saves.len() > 0 {
+            Ok(format!(
+                "You threw away your {} score and re-rolled {} for a score of {}",
+                disposed_score, roll_txt, score
             ))
         } else {
             Ok(format!(
@@ -402,11 +425,14 @@ impl Yahtzee {
         };
         let rolls = player.total_rolls();
         let turns = player.total_turns();
-        format!("{} has made {} rolls and {} re-rolls. Their best score is {} and they've scored {} yahtzees", player_name, turns, rolls as i64 - turns as i64, player.best_score().unwrap_or_default(), player.total_yahtzees())
+        format!("{} has made {} rolls and {} re-rolls. Their best score is {} out of a total {} and they've scored {} yahtzees.", player_name, turns, rolls as i64 - turns as i64, player.best_score().unwrap_or_default(), player.total_score(), player.total_yahtzees())
     }
 
     pub fn get_total_yahtzees(&self, player_name: &str) -> u64 {
-        self.players.get(&player_name.to_lowercase()).map(|p| p.total_yahtzees()).unwrap_or_default()
+        self.players
+            .get(&player_name.to_lowercase())
+            .map(|p| p.total_yahtzees())
+            .unwrap_or_default()
     }
 
     fn get_or_create_player(&mut self, player_name: &str) -> &mut GamePlayer {
