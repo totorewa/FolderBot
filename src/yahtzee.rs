@@ -425,7 +425,13 @@ impl Yahtzee {
         };
         let rolls = player.total_rolls();
         let turns = player.total_turns();
-        format!("{} has made {} rolls and {} re-rolls. Their best score is {} out of a total {} and they've scored {} yahtzees.", player_name, turns, rolls as i64 - turns as i64, player.best_score().unwrap_or_default(), player.total_score(), player.total_yahtzees())
+        let total_score = player.total_score();
+        let avg_score = if turns == 0 {
+            0_f64
+        } else {
+            total_score as f64 / turns as f64
+        };
+        format!("{} has rolled {} time(s) with {} re-roll(s). Total score: {}. Average score: {:.2}. Best score: {}. Yahtzee(s): {}.", player_name, turns, rolls as i64 - turns as i64, total_score, avg_score, player.best_score().unwrap_or_default(), player.total_yahtzees())
     }
 
     pub fn get_total_yahtzees(&self, player_name: &str) -> u64 {
