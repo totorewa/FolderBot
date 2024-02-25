@@ -206,9 +206,9 @@ impl LeaderboardDownloader {
                 if i == rank_idx {
                     rank = cell.parse::<u32>().unwrap_or(rank)
                 } else if i == name_idx {
-                    name = cell.clone()
+                    name = cell
                 } else if i == igt_idx {
-                    igt = cell.clone()
+                    igt = cell
                 }
             }
             let player = Arc::new(AAPlayer { name: name.to_string(), rank, igt: igt.to_string() });

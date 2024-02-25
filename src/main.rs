@@ -13,13 +13,13 @@ use lazy_static::lazy_static;
 use rand::{thread_rng, Rng};
 use regex::Regex;
 use std::path::Path;
+use std::sync::Mutex;
 use std::time::Duration;
 use std::time::SystemTime;
 use std::{
     collections::HashMap,
     sync::atomic::{AtomicU64, Ordering},
 };
-use std::sync::Mutex;
 
 use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
@@ -364,8 +364,7 @@ impl IRCBotClient {
                     let ug = format!("USER_GREET_{}", &user);
                     if user == "pacmanmvc" && cmd.contains("opper") {
                         send_msg(&"Good day, PacManner.".to_string()).await;
-                    }
-                    else if has_responses(&ug) && thread_rng().gen_bool(3.0 / 5.0) {
+                    } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / 5.0) {
                         let name = pd.name().clone();
                         self.send_msg(random_response(&ug).replace("{ur}", &name))
                             .await;
@@ -377,8 +376,7 @@ impl IRCBotClient {
                                 &random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name()),
                             )
                             .await;
-                        }
-                        else {
+                        } else {
                             println!("Failed 1/3 check for greet for {}", &user);
                         }
                     }
@@ -691,7 +689,8 @@ impl IRCBotClient {
                 if matches.is_empty() {
                     send_msg(&format!("There's no one called {} here folderSus", name)).await;
                 } else {
-                    let msg = if matches.len() <= 256 { // actual limit is 500
+                    let msg = if matches.len() <= 256 {
+                        // actual limit is 500
                         matches
                     } else {
                         format!("{:.253}...", matches)
@@ -1213,7 +1212,7 @@ impl IRCBotClient {
                     }
                     return Command::Continue;
                 }
-                
+
                 // Roll gunpowder
                 let mut rng = thread_rng();
                 let mut gp: u64 = 0;
@@ -1233,7 +1232,12 @@ impl IRCBotClient {
                     send_msg(&format!("{} looted {} gunpowder!! folderWoah That's the maximum gunpowder you can loot! Well done!", pd.name(), gp)).await;
                 } else if gp > pd.best_gp {
                     if pd.gp_rolled == 1 {
-                        send_msg(&format!("{} received {} gunpowder from their first ever loot!", pd.name(), gp)).await;
+                        send_msg(&format!(
+                            "{} received {} gunpowder from their first ever loot!",
+                            pd.name(),
+                            gp
+                        ))
+                        .await;
                     } else {
                         send_msg(&format!("{} looted {} gunpowder! PAGGING That's your new personal best! Your previous best was {} gunpowder.", pd.name(), gp, pd.best_gp)).await;
                     }
@@ -1540,7 +1544,8 @@ async fn async_main() {
         // Supported commands, loaded from JSON.
         let ct = CommandTree::from_json_file(Path::new("commands.json"));
         //ct.dump_file(Path::new("commands.parsed.json"));
-        let (mut client, mut forwarder) = IRCBotClient::connect(nick.clone(), secret.clone(), channel.clone(), ct).await;
+        let (mut client, mut forwarder) =
+            IRCBotClient::connect(nick.clone(), secret.clone(), channel.clone(), ct).await;
         client.authenticate().await;
 
         select! {
