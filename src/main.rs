@@ -822,7 +822,7 @@ impl IRCBotClient {
                                     .iter()
                                     .map(|e| (e.1.name(), y.get_total_yahtzees(e.0)))
                                     .filter(|t| t.1 > 0)
-                                    .sorted_by_key(|t| t.1)
+                                    .sorted_by(|a, b| b.1.cmp(&a.1))
                                     .take(10)
                                     .map(|t| format!("{}: {}", t.0, t.1))
                                     .join(", ");

@@ -351,7 +351,7 @@ impl Yahtzee {
             }
         };
 
-        if let Err(err) = serde_json::to_writer(file, self) {
+        if let Err(err) = serde_json::to_writer_pretty(file, self) {
             println!(
                 "Yahtzee failed to serialize for file {}: {}",
                 self.path.display(),
