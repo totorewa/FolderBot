@@ -1,6 +1,7 @@
 pub mod command_tree;
 pub mod player_data;
 pub mod game;
+#[cfg(feature = "audio")]
 pub mod audio;
 pub mod responses;
 pub mod enchants;
