@@ -35,7 +35,9 @@ use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
 use folderbot::trident::{db_random_response, has_responses, random_response};
 use folderbot::yahtzee::YahtzeeError;
-use folderbot::{audio::Audio, trident::db_has_responses};
+#[cfg(feature = "audio")]
+use folderbot::audio::Audio;
+use folderbot::trident::db_has_responses;
 
 use serde::{Deserialize, Serialize};
 
@@ -54,9 +56,10 @@ fn cur_time_or_0() -> u64 {
 
 fn has_been_n_seconds_since(n: u64, t: u64) -> bool {
     let ct = cur_time_or_0();
-    return ct > t + n;
+    ct > t + n
 }
 
+#[allow(dead_code)]
 fn check_timer(dur: u64, last_time: u64) -> Option<u64> {
     let ct = cur_time_or_0();
     if ct > last_time + dur {
@@ -196,6 +199,7 @@ struct IRCBotClient {
     channel: String,
     ct: CommandTree,
     game: Game,
+    #[cfg(feature = "audio")]
     audio: Audio,
     autosave: bool,
     spotify: SpotifyChecker,
@@ -255,6 +259,7 @@ impl IRCBotClient {
                 channel,
                 ct,
                 game: Game::new(),
+                #[cfg(feature = "audio")]
                 audio: Audio::new(),
                 autosave: false,
                 spotify: SpotifyChecker::new().await,
@@ -415,6 +420,7 @@ impl IRCBotClient {
                     .send(TwitchFmt::privmsg(&x.clone(), &self.channel))
                     .await;
                 log_res(format!("Returned a string response ({}).", x).as_str());
+                #[cfg(feature = "audio")]
                 if !node.sound.is_empty() {
                     // Maybe play a sound. But, let's not make this spammable.
                     if let Some(new_time) = check_timer(4, state.tm_sounds) {
@@ -469,15 +475,14 @@ impl IRCBotClient {
                     )
                     .await;
                     return Command::Continue;
-                } else {
-                    self.send_msg(
-                        db_random_response("DEAD_COMMAND_ATTEMPT", "deaths")
-                            .replace("{ur}", &name)
-                            .replace("{m.com}", &cmd_name),
-                    )
-                    .await;
-                    return Command::Continue;
                 }
+                self.send_msg(
+                    db_random_response("DEAD_COMMAND_ATTEMPT", "deaths")
+                        .replace("{ur}", &name)
+                        .replace("{m.com}", &cmd_name),
+                )
+                .await;
+                return Command::Continue;
             }
         }
 
@@ -833,9 +838,8 @@ impl IRCBotClient {
                                         .map(|p| p.name())
                                         .unwrap_or("Zayd".to_string());
                                     reply_and_continue!(&format!("{}, probably", zayd_name));
-                                } else {
-                                    reply_and_continue!(&lb);
-                                }
+                                } 
+                                reply_and_continue!(&lb);
                             }
                             None => return Command::Continue,
                         }
@@ -1344,10 +1348,12 @@ impl IRCBotClient {
                     },
                 }
             }
+            #[cfg(feature = "audio")]
             "admin:mute" => {
                 self.audio.volume_default(0.0);
                 return Command::Continue;
             }
+            #[cfg(feature = "audio")]
             "admin:unmute" => {
                 self.audio.volume_default(0.1);
                 return Command::Continue;
@@ -1379,10 +1385,6 @@ impl IRCBotClient {
                 log_res("Doing elo things");
                 self.send_msg(lookup(args).await).await;
                 return Command::Continue;
-            }
-            "core:play_audio" => {
-                log_res("Audio testing has been disabled. Test with !ban.");
-                // self.audio.play();
             }
             "core:functioning_get_song" => {
                 let song_response = self
@@ -1429,6 +1431,7 @@ impl IRCBotClient {
                     .send(TwitchFmt::privmsg(&message, &self.channel))
                     .await;
             }
+            #[cfg(feature = "audio")]
             "internal:cancel" => {
                 self.audio.stop();
             }
