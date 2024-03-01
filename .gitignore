@@ -3,6 +3,7 @@ out.txt
 notes.txt
 people.json
 *.swp
+/.vscode
 test.json
 src/stt
 log-*

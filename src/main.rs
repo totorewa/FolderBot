@@ -1336,14 +1336,15 @@ impl IRCBotClient {
                         &"Umm I don't think those are valid dice rolls majj".to_string()
                     );
                 }
+                let nick = pd.name();
                 match yahtzee.play(&user, &saved) {
                     Ok(res) => {
-                        reply_and_continue!(&res);
+                        reply_and_continue!(&res.replace("{ur}", &nick));
                     }
                     Err(err) => match err {
                         YahtzeeError::Private(reason) => println!("{}", &reason),
                         YahtzeeError::Public(display) => {
-                            reply_and_continue!(&display);
+                            reply_and_continue!(&display.replace("{ur}", &nick));
                         }
                     },
                 }

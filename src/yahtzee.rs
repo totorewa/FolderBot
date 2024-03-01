@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::max;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
@@ -14,10 +14,11 @@ pub const DICE_COUNT: usize = 5;
 
 #[derive(Clone, Copy, Serialize, Deserialize, Default)]
 struct GameTurn {
-    created_at: u64,
     dice: [u8; DICE_COUNT],
     rolls: u8,
     score: u8,
+    #[serde(default, skip_serializing)]
+    last_rolled_at: u64,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -37,15 +38,12 @@ struct GamePlayer {
 
     best_turn: Option<GameTurn>,
     current_turn: Option<GameTurn>,
-
-    #[serde(default, skip_serializing)]
-    cooldown_ext: u64,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Yahtzee {
     players: HashMap<String, GamePlayer>,
-    turn_cooldown: u64,
+    cooldown: Option<u64>,
 
     #[serde(default, skip_serializing)]
     last_roll: u64,
@@ -60,7 +58,6 @@ impl GameTurn {
 
     fn new() -> Self {
         Self {
-            created_at: get_unixtime(),
             ..Default::default()
         }
     }
@@ -68,7 +65,7 @@ impl GameTurn {
     fn roll(&mut self, saves: &[u8], rng: &mut ThreadRng) -> Result<(), YahtzeeError> {
         if self.rolls >= Self::MAX_ROLLS {
             return Err(YahtzeeError::public(
-                "Erm you've already re-rolled twice smh",
+                "Erm you've already re-rolled twice, {ur} smh",
             ));
         }
         let mut saved_rolls = [0u8; 6];
@@ -89,12 +86,13 @@ impl GameTurn {
         }
         if let Some((face, _)) = saved_rolls.iter().enumerate().find(|s| *s.1 != 0) {
             return Err(YahtzeeError::public(&format!(
-                "Hmmge you don't have enough {} dice",
+                "Hmmge you don't have enough {} dice, {{ur}}",
                 get_dice_face_text(face as u8 + 1)
             )));
         }
         self.rolls += 1;
         self.dice = rolls;
+        self.last_rolled_at = get_unixtime();
         Ok(())
     }
 
@@ -193,29 +191,23 @@ impl GamePlayer {
         cooldown: u64,
         rng: &mut ThreadRng,
     ) -> Result<([u8; 5], u8), YahtzeeError> {
-        if saves.len() != 0 {
-            let turn = match self.current_turn.as_mut() {
-                Some(t) => t,
-                None => {
-                    return Err(YahtzeeError::public(
-                        "Erm you can't re-roll - you haven't rolled yet!",
-                    ))
-                }
-            };
-            if turn.rolls >= GameTurn::MAX_ROLLS {
-                return Err(YahtzeeError::public(
-                    "Erm you've already re-rolled twice smh Start a fresh roll with !yahtzee",
+        if let Some(turn) = self.current_turn.as_ref() {
+            if get_unixtime() - turn.last_rolled_at < cooldown {
+                return Err(YahtzeeError::private(
+                    &"Could not start new turn because player cooldown is active",
                 ));
             }
-        } else {
-            if let Some(turn) = self.current_turn.as_ref() {
-                if get_unixtime() - turn.created_at < cooldown + self.cooldown_ext {
-                    self.cooldown_ext = min(cooldown * 4, self.cooldown_ext + cooldown);
-                    return Err(YahtzeeError::private(
-                        &"Could not start new turn because player cooldown is active",
-                    ));
-                }
+            if saves.len() != 0 && turn.rolls >= GameTurn::MAX_ROLLS {
+                return Err(YahtzeeError::public(
+                    "Erm you've already re-rolled twice, {ur} smh Start a fresh roll with !yahtzee",
+                ));
             }
+        } else if saves.len() != 0 {
+            return Err(YahtzeeError::public(
+                "Erm you can't re-roll, {ur} - you haven't rolled yet!",
+            ));
+        }
+        if saves.len() == 0 {
             self.end_turn();
             self.current_turn = Some(GameTurn::new());
         }
@@ -244,7 +236,6 @@ impl GamePlayer {
             }
         }
         self.current_turn = None;
-        self.cooldown_ext = 0;
     }
 
     fn total_rolls(&self) -> u64 {
@@ -293,8 +284,8 @@ impl Yahtzee {
         Self {
             players: HashMap::new(),
             path: save_path.to_path_buf(),
-            turn_cooldown: 10000,
             last_roll: 0,
+            cooldown: None,
         }
     }
 
@@ -362,7 +353,7 @@ impl Yahtzee {
 
     pub fn play(&mut self, player_name: &str, saves: &[u8]) -> Result<String, YahtzeeError> {
         self.last_roll = get_unixtime();
-        let cd = self.turn_cooldown;
+        let cd = self.cooldown.unwrap_or(2000);
         let player = self.get_or_create_player(player_name);
         let mut rng = thread_rng();
 
@@ -377,30 +368,43 @@ impl Yahtzee {
         let roll_txt = rolls.iter().map(|v| get_dice_face_text(*v)).join(", ");
         if player.best_turn.is_none() && player.current_turn.map(|t| t.rolls).unwrap_or(1) == 1 {
             if score == GameTurn::YAHTZEE_SCORE {
-                return Ok(format!("You rolled {} and scored YAHTZEE on your first roll!! folderWoah I would've taught you how to re-roll but I don't recommend it.", roll_txt));
+                return Ok(format!("{{ur}} rolled {} and scored YAHTZEE on their first roll!! folderWoah I would've taught them how to re-roll but I don't recommend it.", roll_txt));
             }
-            Ok(format!("You rolled {} which scores {}. You can re-roll some dice but if you do you won't keep this score! Specify which dice values you wish to save: e.g. \"!yahtzee {} {} {}\" otherwise roll all dice again to keep your score.", roll_txt, score, rolls[0], rolls[2], rolls[3]))
+            Ok(format!("{{ur}} rolled {} which scores {}. You can re-roll some dice but if you do you won't keep this score! Specify which dice values you wish to keep: e.g. \"!yahtzee {} {} {}\" otherwise roll all dice again to keep your score.", roll_txt, score, rolls[0], rolls[2], rolls[3]))
         } else if score == GameTurn::YAHTZEE_SCORE {
             if is_rerolling_yahtzee {
-                Ok(format!("monkaS you just threw away your Yahtzee... FOR ANOTHER YAHTZEE! IMDEAD You rolled {}", roll_txt))
+                Ok(format!("monkaS {{ur}} just threw away their Yahtzee... FOR ANOTHER YAHTZEE! IMDEAD {{ur}} rolled {}", roll_txt))
             } else {
-                Ok(format!("YAHTZEE! You rolled {} PagMan", roll_txt))
+                Ok(format!("YAHTZEE! {{ur}} rolled {} PagMan", roll_txt))
             }
         } else if is_rerolling_yahtzee {
             Ok(format!(
-                "You rolled {} worth a score of {}... wait, did you just re-roll your yahtzee? WHAT",
+                "{{ur}} rolled {} for {} points... wait, did they just re-roll their yahtzee? WHAT",
                 roll_txt, score
             ))
         } else if disposed_score != 0 && saves.len() > 0 {
-            Ok(format!(
-                "You threw away your {} score and re-rolled {} for a score of {}",
-                disposed_score, roll_txt, score
-            ))
+            if disposed_score == score {
+                Ok(format!(
+                    "{{ur}} re-rolled {} for {} points... no change in score",
+                    disposed_score, roll_txt
+                ))
+            } else if disposed_score < score {
+                Ok(format!(
+                    "{{ur}} re-rolled {} for {} points, gaining {} point(s)",
+                    roll_txt,
+                    score,
+                    score - disposed_score
+                ))
+            } else {
+                Ok(format!(
+                    "{{ur}} re-rolled {} for {} points, losing {} point(s) oof",
+                    roll_txt,
+                    score,
+                    disposed_score - score
+                ))
+            }
         } else {
-            Ok(format!(
-                "You rolled {} worth a score of {}",
-                roll_txt, score
-            ))
+            Ok(format!("{{ur}} rolled {} for {} points", roll_txt, score))
         }
     }
 
