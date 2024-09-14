@@ -24,6 +24,8 @@ use std::{
 use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
 
+#[cfg(feature = "audio")]
+use folderbot::audio::Audio;
 use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
 use folderbot::commands::aaleaderboard::AALeaderboard;
 use folderbot::commands::mcsr::lookup;
@@ -33,11 +35,9 @@ use folderbot::enchants::roll_enchant;
 use folderbot::game::Game;
 use folderbot::responses::rare_trident;
 use folderbot::spotify::SpotifyChecker;
+use folderbot::trident::db_has_responses;
 use folderbot::trident::{db_random_response, has_responses, random_response};
 use folderbot::yahtzee::YahtzeeError;
-#[cfg(feature = "audio")]
-use folderbot::audio::Audio;
-use folderbot::trident::db_has_responses;
 
 use serde::{Deserialize, Serialize};
 
@@ -116,9 +116,7 @@ fn trim_args_end(args: &str) -> &str {
 }
 
 fn split_args(args: &str) -> Vec<&str> {
-    args
-        .split_whitespace()
-        .collect::<Vec<&str>>()
+    args.split_whitespace().collect::<Vec<&str>>()
 }
 
 enum ReadResult {
@@ -301,6 +299,68 @@ impl IRCBotClient {
     }
     */
 
+    async fn do_text_message(
+        &mut self,
+        user: String,
+        cmd: String,
+    ) -> Command {
+        lazy_static! {
+            static ref SCRATCH: std::sync::Mutex<HashMap<String, PlayerScratch>> =
+                Mutex::new(HashMap::new());
+            static ref STATE: Mutex<GameState> = Mutex::new(GameState {
+                ..Default::default()
+            });
+        }
+        let mut scratch = SCRATCH.lock().unwrap();
+        let mut state = STATE.lock().unwrap();
+        let messager = self.sender.clone();
+        let channel = self.channel.clone();
+        let pd: &mut Player = self.player_data.player(&user);
+        state.last_message = cur_time_or_0();
+        let send_msg = |msg: &String| {
+            let msg = msg.clone();
+            async move {
+                match messager.send(TwitchFmt::privmsg(&msg, &channel)).await {
+                    _ => {}
+                };
+            }
+        };
+
+        // Maybe greet.
+        if scratch
+            .entry(user.clone())
+            .or_insert_with(|| PlayerScratch::new())
+            .try_greet()
+        {
+            println!("Potentially greeting {}", &user);
+            // Generic greets only for now. Later, custom greets per player.
+            // Ok, maybe we can do some custom greets.
+            let ug = format!("USER_GREET_{}", &user);
+            if user == "pacmanmvc" && cmd.contains("opper") {
+                send_msg(&"Good day, PacManner.".to_string()).await;
+            } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / 5.0) {
+                let name = pd.name().clone();
+                self.send_msg(random_response(&ug).replace("{ur}", &name))
+                    .await;
+            } else {
+                // scale this with messages sent or file count? lol kind of ties back into
+                // reputation mechanism
+                if thread_rng().gen_bool(1.0 / 3.0) {
+                    send_msg(&random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name()))
+                        .await;
+                } else {
+                    println!("Failed 1/3 check for greet for {}", &user);
+                }
+            }
+        } else if cmd.contains("linux")
+            && !cmd.contains("kernel")
+            && thread_rng().gen_bool(1.0 / 3.0)
+        {
+            send_msg(&String::from("Did you mean GNU/Linux? - Stallman")).await;
+        }
+        return Command::Continue;
+    }
+
     async fn do_command(&mut self, user: String, mut prefix: String, mut cmd: String) -> Command {
         let format_str = format!("[Name({}),Command({})] Result: ", user, cmd);
         let log_res = |s| println!("{}{}", format_str, s);
@@ -316,8 +376,6 @@ impl IRCBotClient {
                 ..Default::default()
             });
         }
-        let mut scratch = SCRATCH.lock().unwrap();
-        let mut state = STATE.lock().unwrap();
         // ensure this player exists
 
         // areweasyncyet? xd
@@ -355,50 +413,19 @@ impl IRCBotClient {
             None => {
                 log_res("Skipped as no match was found.");
 
-                state.last_message = cur_time_or_0();
-
-                // Maybe greet.
-                if scratch
-                    .entry(user.clone())
-                    .or_insert_with(|| PlayerScratch::new())
-                    .try_greet()
-                {
-                    println!("Potentially greeting {}", &user);
-                    // Generic greets only for now. Later, custom greets per player.
-                    // Ok, maybe we can do some custom greets.
-                    let ug = format!("USER_GREET_{}", &user);
-                    if user == "pacmanmvc" && cmd.contains("opper") {
-                        send_msg(&"Good day, PacManner.".to_string()).await;
-                    } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / 5.0) {
-                        let name = pd.name().clone();
-                        self.send_msg(random_response(&ug).replace("{ur}", &name))
-                            .await;
-                    } else {
-                        // scale this with messages sent or file count? lol kind of ties back into
-                        // reputation mechanism
-                        if thread_rng().gen_bool(1.0 / 3.0) {
-                            send_msg(
-                                &random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name()),
-                            )
-                            .await;
-                        } else {
-                            println!("Failed 1/3 check for greet for {}", &user);
-                        }
-                    }
-                } else if cmd.contains("linux") && thread_rng().gen_bool(1.0 / 2.0) {
-                    send_msg(&String::from("Did you mean GNU/Linux? - Stallman")).await;
-                }
-                return Command::Continue; // Not a valid command
+                return self.do_text_message(user, cmd).await; // Not a valid command
             }
         };
         if prefix != node.prefix && !(prefix == "" && node.prefix == "^") {
             log_res("Skipped as prefix does not match.");
-            return Command::Continue;
+            return self.do_text_message(user, cmd).await;
         }
 
         pd.sent_commands += 1;
 
         let args = cmd;
+        let mut scratch = SCRATCH.lock().unwrap();
+        let mut state = STATE.lock().unwrap();
         println!("Arguments being returned -> '{}'", args);
         if node.admin_only
             && ((node.super_only && user != self.ct.superuser) || !(self.ct.admins.contains(&user)))
@@ -445,7 +472,8 @@ impl IRCBotClient {
 
         macro_rules! reply_and_continue {
             ($e:expr) => {
-                let _ = self.sender
+                let _ = self
+                    .sender
                     .send(TwitchFmt::privmsg($e, &self.channel))
                     .await;
                 return Command::Continue;
@@ -838,12 +866,12 @@ impl IRCBotClient {
                                         .map(|p| p.name())
                                         .unwrap_or("Zayd".to_string());
                                     reply_and_continue!(&format!("{}, probably", zayd_name));
-                                } 
+                                }
                                 reply_and_continue!(&lb);
                             }
                             None => return Command::Continue,
                         }
-                    },
+                    }
                     _ => return Command::Continue,
                 };
                 send_msg(&self.player_data.any_leaderboard(p)).await;
@@ -1318,7 +1346,7 @@ impl IRCBotClient {
                     match split_args.get(1) {
                         Some(a) => {
                             reply_and_continue!(&yahtzee.player_stats(a));
-                        },
+                        }
                         None => return Command::Continue,
                     }
                 }
