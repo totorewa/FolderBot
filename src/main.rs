@@ -39,6 +39,8 @@ use folderbot::trident::db_has_responses;
 use folderbot::trident::{db_random_response, has_responses, random_response};
 use folderbot::yahtzee::YahtzeeError;
 
+use libretranslate::{translate_url, Language};
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -162,7 +164,22 @@ trait IRCStream {
 impl IRCStream for TcpStream {
     async fn send(&mut self, text: IRCMessage) {
         println!("Sending: '{}'", text.0.trim());
-        let _ = self.write(text.0.as_bytes()).await;
+        // lol
+        let source = Language::English;
+        let target = Language::French;
+        if let Ok(res) = translate_url(
+            source,
+            target,
+            text.0.clone(),
+            "10.0.0.245:5000".to_string(),
+            None,
+        )
+        .await
+        {
+            let _ = self.write(res.target.to_string().as_bytes()).await;
+        } else {
+            let _ = self.write(text.0.as_bytes()).await;
+        }
     }
 }
 
@@ -299,11 +316,7 @@ impl IRCBotClient {
     }
     */
 
-    async fn do_text_message(
-        &mut self,
-        user: String,
-        cmd: String,
-    ) -> Command {
+    async fn do_text_message(&mut self, user: String, cmd: String) -> Command {
         lazy_static! {
             static ref SCRATCH: std::sync::Mutex<HashMap<String, PlayerScratch>> =
                 Mutex::new(HashMap::new());
