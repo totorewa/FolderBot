@@ -160,23 +160,37 @@ trait IRCStream {
     async fn send(&mut self, text: IRCMessage) -> ();
 }
 
+const TRANSLATE_FRENCH: bool = true; 
+
 #[async_trait]
 impl IRCStream for TcpStream {
     async fn send(&mut self, text: IRCMessage) {
-        println!("Sending: '{}'", text.0.trim());
+        if !text.0.starts_with("PRIVMSG") || !TRANSLATE_FRENCH {
+            println!("Sending: '{}'", text.0.trim());
+            let _ = self.write(text.0.as_bytes()).await;
+            return;
+        }
         // lol
         let source = Language::English;
         let target = Language::French;
+
+        // not bad
+        let mut splitter = text.0.splitn(2, ':');
+        let first = splitter.next().unwrap();
+        let second = splitter.next().unwrap();
+
         if let Ok(res) = translate_url(
             source,
             target,
-            text.0.clone(),
+            second.to_string(),
             "10.0.0.245:5000".to_string(),
             None,
         )
         .await
         {
-            let _ = self.write(res.target.to_string().as_bytes()).await;
+            let _ = self
+                .write(format!("{}:{}", first, res.target.to_string()).as_bytes())
+                .await;
         } else {
             let _ = self.write(text.0.as_bytes()).await;
         }
