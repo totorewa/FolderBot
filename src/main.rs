@@ -198,7 +198,7 @@ impl IRCStream for TcpStream {
         let target = Language::French;
 
         // not bad
-        let mut splitter = text.0.splitn(2, ':');
+        let mut splitter = text.0.trim().splitn(2, ':');
         let first = splitter.next().unwrap();
         let second = splitter.next().unwrap();
 
@@ -213,8 +213,8 @@ impl IRCStream for TcpStream {
         .await
         {
             println!("Successfully translated.");
-            let to_write = format!("{}:{}", first, res.target.to_string());
-            println!("Translated to: '{}'", to_write);
+            let to_write = format!("{}:{}\r\n", first, res.output);
+            println!("Translated to: '{}'", to_write.trim());
             let _ = self
                 .write(to_write.as_bytes())
                 .await;
