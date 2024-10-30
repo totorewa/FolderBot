@@ -40,8 +40,31 @@ use folderbot::trident::{db_random_response, has_responses, random_response};
 use folderbot::yahtzee::YahtzeeError;
 
 use libretranslate::{translate_url, Language};
+use surf::middleware::{Next, Middleware};
+use surf::{Client, Request, Response, Result};
+use std::time;
 
 use serde::{Deserialize, Serialize};
+
+// just stuff for libretranslate I guess
+#[derive(Debug)]
+pub struct Logger;
+
+#[surf::utils::async_trait]
+impl Middleware for Logger {
+    async fn handle(
+        &self,
+        req: Request,
+        client: Client,
+        next: Next<'_>,
+    ) -> Result<Response> {
+        println!("sending request to {}: {:?}", req.url(), req);
+        let now = time::Instant::now();
+        let res = next.run(req, client).await?;
+        println!("request completed ({:?})", now.elapsed());
+        Ok(res)
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct MojangAPIResponse {
@@ -189,10 +212,12 @@ impl IRCStream for TcpStream {
         )
         .await
         {
+            println!("Successfully translated.");
             let _ = self
                 .write(format!("{}:{}", first, res.target.to_string()).as_bytes())
                 .await;
         } else {
+            println!("Translation failed.");
             let _ = self.write(text.0.as_bytes()).await;
         }
     }
