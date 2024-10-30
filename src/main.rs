@@ -179,11 +179,12 @@ impl IRCStream for TcpStream {
         let first = splitter.next().unwrap();
         let second = splitter.next().unwrap();
 
+        println!("Translating to French...");
         if let Ok(res) = translate_url(
             source,
             target,
             second.to_string(),
-            "10.0.0.245:5000".to_string(),
+            "http://10.0.0.245:5000".to_string(),
             None,
         )
         .await
