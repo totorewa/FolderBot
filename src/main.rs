@@ -202,7 +202,7 @@ impl IRCStream for TcpStream {
         let first = splitter.next().unwrap();
         let second = splitter.next().unwrap();
 
-        println!("Translating to French...");
+        println!("Translating '{}' to French...", second);
         if let Ok(res) = translate_url(
             source,
             target,
@@ -213,8 +213,10 @@ impl IRCStream for TcpStream {
         .await
         {
             println!("Successfully translated.");
+            let to_write = format!("{}:{}", first, res.target.to_string());
+            println!("Translated to: '{}'", to_write);
             let _ = self
-                .write(format!("{}:{}", first, res.target.to_string()).as_bytes())
+                .write(to_write.as_bytes())
                 .await;
         } else {
             println!("Translation failed.");
