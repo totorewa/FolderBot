@@ -12,7 +12,7 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use rand::{thread_rng, Rng};
 use regex::Regex;
-use std::path::Path;
+use std::{path::Path, sync::atomic::AtomicBool};
 use std::sync::Mutex;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -183,12 +183,13 @@ trait IRCStream {
     async fn send(&mut self, text: IRCMessage) -> ();
 }
 
-const TRANSLATE_FRENCH: bool = true; 
+static TRANSLATE_FRENCH: AtomicBool = AtomicBool::new(false);
 
 #[async_trait]
 impl IRCStream for TcpStream {
     async fn send(&mut self, text: IRCMessage) {
-        if !text.0.starts_with("PRIVMSG") || !TRANSLATE_FRENCH {
+        let has_flag = text.0.contains("[nofr]");
+        if !text.0.starts_with("PRIVMSG") || !TRANSLATE_FRENCH.load(Ordering::Relaxed) || has_flag {
             println!("Sending: '{}'", text.0.trim());
             let _ = self.write(text.0.as_bytes()).await;
             return;
@@ -852,6 +853,33 @@ impl IRCBotClient {
                 log_res("Turned on autosave.");
                 self.autosave = true;
             }
+            "feature:translate" => {
+                log_res("Translating a message.");
+                let is_fr = match &args[..3] {
+                    "fr " => true,
+                    "en " => false,
+                    _ => {
+                        send_msg(&"Error: Must start with either fr or en (target language)".to_string()).await;
+                        return Command::Continue;
+                    }
+                };
+                let source = args[3..].to_string();
+                let to_lang = if is_fr { Language::French } else { Language::English };
+                let from_lang = if !is_fr { Language::French } else { Language::English };
+
+                if let Ok(res) = translate_url(
+                    from_lang,
+                    to_lang,
+                    source,
+                    "http://10.0.0.245:5000".to_string(),
+                    None,
+                )
+                .await
+                {
+                    let to_write = format!("{} [nofr]", res.output);
+                    send_msg(&to_write).await;
+                }
+            }
             "feature:rsg" => {
                 log_res("Printing what RSG does.");
                 if let Ok(get_resp) = reqwest::get("http://shnenanigans.pythonanywhere.com/").await
@@ -1464,6 +1492,11 @@ impl IRCBotClient {
                 let pde = self.player_data.player(&v[0].to_string());
                 pde.nick = Some(v[1].to_string());
                 return Command::Continue;
+            }
+            "admin:toggle_translate" => {
+                log_res("Toggling translation mode.");
+                use std::sync::atomic::Ordering::Relaxed;
+                TRANSLATE_FRENCH.store(!TRANSLATE_FRENCH.load(Relaxed), Relaxed);
             }
             "feature:elo" => {
                 log_res("Doing elo things");
