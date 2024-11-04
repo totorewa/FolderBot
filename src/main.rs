@@ -12,7 +12,7 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use rand::{thread_rng, Rng};
 use regex::Regex;
-use std::{path::Path, sync::atomic::AtomicBool};
+use std::{ops::Sub, path::Path, sync::atomic::AtomicI8};
 use std::sync::Mutex;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -183,13 +183,20 @@ trait IRCStream {
     async fn send(&mut self, text: IRCMessage) -> ();
 }
 
-static TRANSLATE_FRENCH: AtomicBool = AtomicBool::new(false);
+// 0: No translation
+// 10: 100% translation
+static TRANSLATE_FRENCH: AtomicI8 = AtomicI8::new(0);
 
 #[async_trait]
 impl IRCStream for TcpStream {
     async fn send(&mut self, text: IRCMessage) {
+        use rand::thread_rng;
+        // 0..9.
+        let i: i8 = thread_rng().gen_range(0..10);
+        // TRANSLATE_FRENCH(0) => 10 => always < min, so we never translate
+        let min: i8 = 10_i8.checked_sub(TRANSLATE_FRENCH.load(Ordering::Relaxed)).unwrap_or(10);
         let has_flag = text.0.contains("[nofr]");
-        if !text.0.starts_with("PRIVMSG") || !TRANSLATE_FRENCH.load(Ordering::Relaxed) || has_flag {
+        if !text.0.starts_with("PRIVMSG") || i < min || has_flag {
             println!("Sending: '{}'", text.0.trim());
             let _ = self.write(text.0.as_bytes()).await;
             return;
@@ -1495,8 +1502,14 @@ impl IRCBotClient {
             }
             "admin:toggle_translate" => {
                 log_res("Toggling translation mode.");
-                use std::sync::atomic::Ordering::Relaxed;
-                TRANSLATE_FRENCH.store(!TRANSLATE_FRENCH.load(Relaxed), Relaxed);
+                if let Ok(i) = args.trim().parse::<i8>() {
+                    if i <= 10 {
+                        use std::sync::atomic::Ordering::Relaxed;
+                        TRANSLATE_FRENCH.store(i, Relaxed);
+                        return Command::Continue;
+                    }
+                }
+                send_msg(&format!("{} is not a valid translation percentage. Must be 0..=10.", &args)).await;
             }
             "feature:elo" => {
                 log_res("Doing elo things");
