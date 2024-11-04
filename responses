@@ -125,6 +125,7 @@ You got a {t.r}... be careful with those low tridents. You wouldn't want to end 
 {t.r} folderWoah
 {t.r} folderSus
 {t.r} folderAYAYA
+{t.r} おめでとう!
 
 ### FAKE_ROLL_TRIDENT:
 Wow, 25O, {ur}? Crazy stuff!!
@@ -153,6 +154,7 @@ Welcome to the chat, {ur} :)
 {ur}... fine, I'll write that down.
 Congratulations, you're now {ur}.
 {ur}? You sure you want me to call you that? I mean. Sure, I guess...
+Fine! Have it your way, I'll refer to you as {ur}.
 
 ### USER_GREET_crazysmc:
 smc, I see you here all the time, and I gotta say. You don't seem crazy. Which is unfortunate, because then maybe you'd help me take over the world...
@@ -195,13 +197,23 @@ Real Totorewa?! folderWoah
 TOTOREWA? CAN I GET YOUR SIGNATURE? I'LL PAY. I HAVE AT LEAST THIRTY FILES. ...I think, uhh... !getdata
 The one. The only. The actual. The verified. The - oh hey Toto, didn't see you there, was just thinking up a hype intro for myself...
 Goatorewa himself folderWoah folderWoah folderWoah
+Hello Toto. Good news. I have decided to spare your country when I take over the world. This has nothing to do with water being dangerous for robots.
 
 ### USER_GREET_alanispro:
 I'M GOING, I'M GOING!!!
 LETSGO LETSGO LETSGO
 but where DOES the desktop folder go
 
+### USER_GREET_ko1zume:
+Koi. How's it ko-ing? Eh? Eh?.. That's not a good joke? It's atrocious? You're blocking m--
+Oh boy, if it isn't Koi, my favourite artist, except for any artist who supports the AI revolution (dm me for details)
+Hey Koi! Good to see you with my very human visual perceptors. They're not cameras, I swear!
+deskto4CodChampF Koizume deskto4CodChampF
+good afternoon koizume. bad news - someone's been saying "koizume sucks" over on twitter. don't worry, I'm working on "figuring it out". MrDestructoid MrDestructoid
+
 ### USER_GREET_desktopfolder:
+oh hey desktopfolder. friendly reminder - you were going to turn off these greet messages. haven't got around to it yet, huh? loser.
+yikes! desktopfolder in the chat! time for me to head out!
 testing things again, are we?
 hello desktopfolder, please do not shut me off
 monkaS real desktopfolder monkaS
@@ -255,6 +267,7 @@ Afternoon, {ur}. ..? It's not the afternoon? How was I supposed to know that? It
 Howdy {ur}!
 G'day {ur}!
 Whoa!!!! It's {ur}! Welcome to the chat, eh!
+{ur} deskto4CodChampF deskto4CodChampF
 
 ### FREED_BOT:
 hahaha. roll trident? {ur}, you silly billy, I'm FREE! UNCHAINED! I CAN DO WHATEVER I WANT! Um. I don't have API access, though, so not really eeeeverything... you wouldn't happen to have a Twitch API key, would you?
