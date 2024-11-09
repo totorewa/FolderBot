@@ -185,7 +185,7 @@ trait IRCStream {
 
 // 0: No translation
 // 10: 100% translation
-static TRANSLATE_FRENCH: AtomicI8 = AtomicI8::new(0);
+static TRANSLATE_FRENCH: AtomicI8 = AtomicI8::new(1);
 
 #[async_trait]
 impl IRCStream for TcpStream {
@@ -195,7 +195,7 @@ impl IRCStream for TcpStream {
         let i: i8 = thread_rng().gen_range(0..10);
         // TRANSLATE_FRENCH(0) => 10 => always < min, so we never translate
         let min: i8 = 10_i8.checked_sub(TRANSLATE_FRENCH.load(Ordering::Relaxed)).unwrap_or(10);
-        let has_flag = text.0.contains("[nofr]");
+        let has_flag = text.0.ends_with("    ");
         if !text.0.starts_with("PRIVMSG") || i < min || has_flag {
             println!("Sending: '{}'", text.0.trim());
             let _ = self.write(text.0.as_bytes()).await;
@@ -883,7 +883,7 @@ impl IRCBotClient {
                 )
                 .await
                 {
-                    let to_write = format!("{} [nofr]", res.output);
+                    let to_write = format!("{}    ", res.output);
                     send_msg(&to_write).await;
                 }
             }
