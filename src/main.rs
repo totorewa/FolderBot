@@ -215,7 +215,7 @@ impl IRCStream for TcpStream {
             source,
             target,
             second.to_string(),
-            "http://10.0.0.245:5000".to_string(),
+            "http://192.168.1.245:5000".to_string(),
             None,
         )
         .await
@@ -878,7 +878,7 @@ impl IRCBotClient {
                     from_lang,
                     to_lang,
                     source,
-                    "http://10.0.0.245:5000".to_string(),
+                    "http://192.168.1.245:5000".to_string(),
                     None,
                 )
                 .await
