@@ -93,6 +93,10 @@ def seconds_since_update():
     then = int(open(UpdatedToken.filename()).read().strip())
     return abs(now - then)
 
+def duration_since_update():
+    from datetime import timedelta
+    return timedelta(seconds=seconds_since_update())
+
 def merge(newest, others):
     has = set([get_id(d) for d in newest])
     return newest + [o for o in others if get_id(o) not in has]
