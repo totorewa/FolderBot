@@ -166,6 +166,8 @@ class Bot(commands.Bot):
             playername = None
         pcs = [p for p in USEFUL_DATA() if p.filter(split=split, player=playername)]
         d = sorted(pcs, key=lambda p: p.get(split) or 0)
+        if not d:
+            return await ctx.send(f'No {split} times found for {playername}.')
         fastest = d[0].get(split)
         fastest_name = d[0].player
         seed = f'{len(pcs)} known {split} times. Fastest: {td(fastest)}'
