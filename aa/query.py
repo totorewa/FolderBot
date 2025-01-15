@@ -72,7 +72,9 @@ DATAFILE = "aa.json"
     "stronghold": 1124483
   },
 """
-AA_TIME_BARRIER = (1 * 60 + 30) * 1000
+# AA_TIME_BARRIER = (1 * 60 + 30) * 1000
+# Let's do sub2 instead
+AA_TIME_BARRIER = (2 * 60) * 1000
 ALL_SPLITS = [
     'nether', 'bastion', 'fortress', 'first_portal', 'stronghold', 'end', 'elytra', 'credits', 'finish'
 ]
@@ -134,7 +136,7 @@ class PacemanObject:
 def DATA() -> list[dict]:
     auto_update()
     data = json.load(open(datafile(DATAFILE)))
-    return [o for o in data if o.get("nether") > AA_TIME_BARRIER]
+    return [o for o in data if o.get("nether") > AA_TIME_BARRIER or 'elytra' in o]
 
 # Sorted by INSERT TIME!!!
 def DATA_SORTED() -> list[dict]:
@@ -193,11 +195,16 @@ def pretty_ms(v: int):
     from datetime import timedelta
     return str(timedelta(milliseconds=v))
 
+def analyze(p: str):
+    for x in DATA():
+        if x['nickname'].lower() == p.lower():
+            print(x)
+
 def main(args: list[str]):
     print(unique_keys())
     print(pretty_with("finish", postprocess=pretty_ms))
     average_by("nether", "nickname")
-    # print(pretty_with("nether", pred=lambda o: o["nickname"] == "DesktopFolder", sort=True, postprocess=pretty_ms))
+    # print(pretty_with("nether", pred=lambda o: o["nickname"] == "Feinberg", sort=True, postprocess=pretty_ms))
 
 if __name__ == "__main__":
     from sys import argv
