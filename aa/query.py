@@ -7,6 +7,28 @@ class td:
     def __init__(self, t):
         from datetime import timedelta
         assert t is not None
+        if isinstance(t, str):
+            if ':' not in t:
+                minutes = int(t)
+                t = timedelta(minutes=minutes)
+            elif len(t) > 5: # 00:00 == 5
+                hours, minutes, seconds = t.split(':', 2)
+                hours = int(hours)
+                assert hours < 1000
+                assert len(minutes) < 3
+                assert len(seconds) < 3
+                minutes = int(minutes) + 60 * hours
+                # just do the total cause I don't want to check
+                # timedelta documentation, lol
+                seconds = int(seconds) + 60 * minutes
+                t = timedelta(seconds=seconds)
+            else:
+                minutes, seconds = t.split(':', 1)
+                minutes = int(minutes)
+                # just do the total cause I don't want to check
+                # timedelta documentation, lol
+                seconds = int(seconds) + 60 * minutes
+                t = timedelta(seconds=seconds)
         self.src: timedelta = t
         self.hours, rem = divmod(self.src.seconds, 3600)
         self.minutes, self.seconds = divmod(rem, 60)
@@ -16,6 +38,9 @@ class td:
         if self.hours > 0:
             return f'{self.hours}:{src}'
         return src
+
+    def total_seconds(self):
+        return self.src.total_seconds()
 
     @staticmethod
     def average(ts: list):
@@ -49,7 +74,7 @@ DATAFILE = "aa.json"
 """
 AA_TIME_BARRIER = (1 * 60 + 30) * 1000
 ALL_SPLITS = [
-    'nether', 'bastion', 'stronghold', 'elytra', 'credits', 'finish'
+    'nether', 'bastion', 'fortress', 'first_portal', 'stronghold', 'end', 'elytra', 'credits', 'finish'
 ]
 
 class PacemanObject:
@@ -65,22 +90,22 @@ class PacemanObject:
 
         self.num_advancements = d.get("count", 0)
 
-        # Timestamps. This should all really be auto-generated... ah.
-        def make_getter(obj, split):
-            def string_getter():
-                val = getattr(obj, split)
-                if val is None:
-                    return f'(No {split} split found)'
-                v = td(val)
-                src = f'{v.minutes:02}:{v.seconds:02}'
-                if v.hours > 0:
-                    return f'{v.hours}:{src}'
-                return src
-            return string_getter
-        for split in ALL_SPLITS:
-            setattr(self, split, ms_or(split))
-            setattr(self, f'{split}_str', make_getter(self, split))
-        # missing some... good enough for now
+        # So much better than before, lol.
+        self.splits: dict[str, timedelta] = dict()
+        for k, v in d.items():
+            if not isinstance(v, int) or v < 1000 * 60:
+                continue
+            self.splits[k] = timedelta(milliseconds=v)
+
+    def get_str(self, split: str):
+        res = self.splits.get(split)
+        if res is None:
+            return f'(No {split} split found)'
+        v = td(res)
+        src = f'{v.minutes:02}:{v.seconds:02}'
+        if v.hours > 0:
+            return f'{v.hours}:{src}'
+        return src
 
     @property
     def twitch(self):
@@ -92,14 +117,10 @@ class PacemanObject:
         return self.player.lower() == other.lower()
 
     def has(self, split: str):
-        return getattr(self, split) is not None
+        return split in self.splits
 
     def get(self, split: str):
-        from datetime import timedelta
-        x = getattr(self, split)
-        if not isinstance(x, timedelta):
-            raise AssertionError(f'{x} should be of type timedelta but is actually {type(x)}!')
-        return getattr(self, split)
+        return self.splits.get(split)
 
     def filter(self, split=None, player=None):
         # meh quick and dirty it works I guess
