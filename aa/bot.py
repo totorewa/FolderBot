@@ -127,7 +127,7 @@ class Bot(commands.Bot):
         self.configuration[cn] = {"name": cn}
         self.save()
         await self.join_channels([cn])
-        return await ctx.send(f'Theoretically joined {cn}.')
+        return await ctx.send(f'Theoretically joined {cn}. Note: If you have follower mode chat limitations, you MUST mod FolderBot for it to work in your channel.')
 
     @commands.command()
     async def average(self, ctx: commands.Context, splitname: str, playername: Optional[str] = None):
@@ -198,9 +198,9 @@ class Bot(commands.Bot):
         pcs = [t for t in pcs if t <= maximum.src]
 
         if playername is None:
-            return await ctx.send(f'There are {len(pcs)} {split} times faster than {maximum}.')
+            return await ctx.send(f'There are {len(pcs)} known {split} times faster than {maximum}.')
         else:
-            return await ctx.send(f'{playername} has {len(pcs)} {split} times faster than {maximum}.')
+            return await ctx.send(f'{playername} has {len(pcs)} known {split} times faster than {maximum}.')
 
     @commands.command()
     async def countgt(self, ctx: commands.Context, split: str, time: str, playername: Optional[str] = None):
@@ -218,9 +218,9 @@ class Bot(commands.Bot):
         pcs = [t for t in pcs if t > minimum.src]
 
         if playername is None:
-            return await ctx.send(f'There are {len(pcs)} {split} times slower than {minimum}.')
+            return await ctx.send(f'There are {len(pcs)} known {split} times slower than {minimum}.')
         else:
-            return await ctx.send(f'{playername} has {len(pcs)} {split} times slower than {minimum}.')
+            return await ctx.send(f'{playername} has {len(pcs)} known {split} times slower than {minimum}.')
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
         if playername is not None:
