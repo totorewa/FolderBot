@@ -297,15 +297,15 @@ class Bot(commands.Bot):
         return cn
 
     @commands.command()
-    async def latest(self, ctx: commands.Context, split: str, playername: Optional[str] = None):
+    async def latest(self, ctx: commands.Context, split: str = 'nether', playername: Optional[str] = None):
         # TODO - n parameter
         self.add(ctx, 'latest')
         playername = self.playername(ctx, playername)
-        pcs = [p for p in USEFUL_DATA() if p.filter(split='nether', player=playername)]
+        pcs = [p for p in USEFUL_DATA() if p.filter(split=split, player=playername)]
         if not pcs:
             return await ctx.send(f'No nethers found for {playername}.')
         lat = pcs[0].all_sorted()
-        return await ctx.send(f'Latest run: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]))
+        return await ctx.send(f'Latest {split} for {playername}: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]))
 
     @commands.command()
     async def bastion_breakdown(self, ctx: commands.Context, playername: Optional[str] = None):
