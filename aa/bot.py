@@ -6,6 +6,10 @@ from query import DATA, PacemanObject, DATA_SORTED, ALL_SPLITS, USEFUL_DATA, td
 from sys import argv
 
 
+def clean(s: str):
+    return ''.join([ch for ch in s if ch.isalnum() or ch == '_'])
+
+
 def partition(l: list, p: Callable):
     has_it = [x for x in l if p(x)]
     nopers = [x for x in l if not p(x)]
@@ -70,14 +74,26 @@ class Bot(commands.Bot):
     @commands.command()
     async def help(self, ctx: commands.Context, page = 1): ##### help
         helpers = [
-            "AA Paceman extension: ?average [splitname] [playername] -> average split for a player, ?help 2 -> Bot configuration help, ?help 3 -> Bot metainformation help",
+            "AA Paceman extension: ?statscommands -> List of stats commands with details (WIP), "
+            "?all -> List of all commands (no details) "
+            "?help 2 -> Configuration/Setup, ?help 3 -> List of splits, ?help 4 -> Metainformation",
             "(help 2) ?join -> Join the bot to your channel, ?setplayer -> Set the default player for this channel",
-            '(help 3) ?info -> Metadata on bot status, ?botdiscord -> Server with bot information, ?about -> Credits'
+            f"(help 3) All splits: {', '.join(ALL_SPLITS)}",
+            '(help 4) ?info -> Metadata on bot status, ?botdiscord -> Server with bot information, ?about -> Credits'
         ]
         p = page - 1
         if p < 0 or p >= len(helpers):
             return await ctx.send(f"Page number is out of bounds (maximum: {len(helpers)})")
         await ctx.send(helpers[p])
+    @commands.command()
+    async def statscommands(self, ctx: commands.Context): ##### help
+        helpers = ["?average [splitname] [player] -> average split for a player, ?conversion "
+                "[split1] [split2] [player] -> % of split1s that turn into split2s, ?countlt "
+                "[split] [time] [player] -> Count the # of splits that are faster than [time]"]
+        await ctx.send(helpers[0])
+    @commands.command()
+    async def all(self, ctx: commands.Context): ##### help
+        await ctx.send("?average, ?conversion, ?count, ?countlt, ?countgt, ?bastion_breakdown")
     @commands.command()
     async def botdiscord(self, ctx: commands.Context): ##### bot discord
         await ctx.send("For to-do list & feature requests: https://discord.gg/NSp5t3wfBP")
@@ -92,6 +108,7 @@ class Bot(commands.Bot):
         infos = [f'Time since update: {dur}.']
         if dur0 != dur:
             infos.append(f'({dur0} before this command)')
+        infos.append(f'Bot is in {len(self.configuration)} channels.')
         infos.append(f'{len(data)} known AA runs.')
         last_nether = PacemanObject(data[0])
         if last_nether.get('nether') is not None:
@@ -110,7 +127,7 @@ class Bot(commands.Bot):
         cn = ctx.channel.name.lower()
         if not cn in self.configuration:
             return await ctx.send('Let me know if you see this.')
-        self.configuration[cn]['player'] = playername
+        self.configuration[cn]['player'] = clean(playername)
         self.save()
         return await ctx.send(f'Set default player to {playername}.')
 
@@ -226,7 +243,7 @@ class Bot(commands.Bot):
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
         if playername is not None:
-            return playername
+            return clean(playername)
         cn = ctx.channel.name.lower()
         if cn not in self.configuration:
             return 'If you see this, please tell DesktopFolder'
