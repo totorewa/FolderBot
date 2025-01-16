@@ -62,17 +62,43 @@ class Bot(commands.Bot):
             import json
             json.dump(self.configuration, file, indent=2)
 
+    def add(self, ctx: commands.Context, command: str):
+        cn = ctx.channel.name.lower()
+        unknown = '^ unknown' 
+        if cn not in self.configuration:
+            if unknown not in self.configuration:
+                self.configuration['unknown'] = dict()
+            loc = self.configuration['unknown']
+        else:
+            loc = self.configuration[cn]
+        cmd = f'command_{command}'
+        if cmd not in loc:
+            loc[cmd] = 0
+        loc[cmd] += 1
+
     async def event_ready(self):
         # Notify us when everything is ready!
         # We are logged in and ready to chat and use commands...
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')
 
+    @commands.command()
+    async def quicksave(self, ctx: commands.Context): ##### help
+        if not isinstance(ctx.author, Chatter):
+            return await ctx.send('No Chatter instance found.')
+        if ctx.author.name.lower() == 'desktopfolder':
+            # yeah just me thanks.
+            self.save()
+            return await ctx.send('Quicksaved state.')
+        else:
+            return await ctx.send('Only the bot maintainer can use this command.')
+
     ########################################################################################
     ############################ Methods to send generic strings ###########################
     ########################################################################################
     @commands.command()
     async def help(self, ctx: commands.Context, page = 1): ##### help
+        self.add(ctx, 'help')
         helpers = [
             "AA Paceman extension: ?statscommands -> List of stats commands with details (WIP), "
             "?all -> List of all commands (no details) "
@@ -96,12 +122,15 @@ class Bot(commands.Bot):
         await ctx.send("?average, ?conversion, ?count, ?countlt, ?countgt, ?bastion_breakdown")
     @commands.command()
     async def botdiscord(self, ctx: commands.Context): ##### bot discord
+        self.add(ctx, 'botdiscord')
         await ctx.send("For to-do list & feature requests: https://discord.gg/NSp5t3wfBP")
     @commands.command()
     async def about(self, ctx: commands.Context): ##### about
+        self.add(ctx, 'about')
         await ctx.send("Made by DesktopFolder. Uses stats from Jojoe's Paceman AA API. Uses local caching to reduce API calls.")
     @commands.command()
     async def info(self, ctx: commands.Context):  ##### info
+        self.add(ctx, 'info')
         dur0 = duration_since_update()
         data = DATA_SORTED()
         dur = duration_since_update()
@@ -112,7 +141,15 @@ class Bot(commands.Bot):
         infos.append(f'{len(data)} known AA runs.')
         last_nether = PacemanObject(data[0])
         if last_nether.get('nether') is not None:
-            infos.append(f'Last nether: {last_nether.get_str("nether")} by {last_nether.player}.')
+            infos.append(f'Latest nether: {last_nether.get_str("nether")} by {last_nether.player}.')
+        tot_calls = 0
+        stats_commands = {'average', 'conversion', 'count', 'countlt', 'countgt', 'bastion_breakdown', 'latest'}
+        stats_stats = [f'command_{s}' for s in stats_commands]
+        for v in self.configuration.values():
+            for st in stats_stats:
+                if st in v:
+                    tot_calls += v[st]
+        infos.append(f'~{tot_calls} total statistics queries made.')
         await ctx.send(' '.join(infos))
 
     ########################################################################################
@@ -120,6 +157,7 @@ class Bot(commands.Bot):
     ########################################################################################
     @commands.command()
     async def setplayer(self, ctx: commands.Context, playername: str):
+        self.add(ctx, 'setplayer')
         if not isinstance(ctx.author, Chatter):
             return await ctx.send('Cannot validate that you are the broadcaster.')
         if not ctx.author.is_broadcaster:
@@ -133,6 +171,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def join(self, ctx: commands.Context, agree: str = ""):
+        self.add(ctx, 'join')
         cn = ctx.author.name
         if cn is None:
             return await ctx.send("Name was none; if this issue persists, contact DesktopFolder.")
@@ -140,7 +179,7 @@ class Bot(commands.Bot):
             return await ctx.send(f"Bot is already joined to {cn}.")
         cn = cn.lower()
         if agree != "agree":
-            return await ctx.send(f'This is in development. See {self.prefix}botdiscord for current todos/feature requests. If you agree, and want to join this bot to {cn}, type {self.prefix}join agree')
+            return await ctx.send(f'Notice: This is in development. See {self.prefix}botdiscord for current todos/feature requests. If you are okay with intermittent downtime & potential bugs, and want to join this bot to your channel ({cn}), type {self.prefix}join agree')
         self.configuration[cn] = {"name": cn}
         self.save()
         await self.join_channels([cn])
@@ -148,6 +187,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def average(self, ctx: commands.Context, splitname: str, playername: Optional[str] = None):
+        self.add(ctx, 'average')
         playername = self.playername(ctx, playername)
         splitname = splitname.lower()
         if not splitname in ALL_SPLITS:
@@ -159,6 +199,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def conversion(self, ctx: commands.Context, split1: str, split2: str, playername: Optional[str] = None):
+        self.add(ctx, 'conversion')
         playername = self.playername(ctx, playername)
         # yikes need to do some refactoring
         split1 = split1.lower()
@@ -176,6 +217,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def count(self, ctx: commands.Context, split: str, playername: Optional[str] = None):
+        self.add(ctx, 'count')
         playername = self.playername(ctx, playername)
         if not split in ALL_SPLITS:
             return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
@@ -203,6 +245,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def countlt(self, ctx: commands.Context, split: str, time: str, playername: Optional[str] = None):
+        self.add(ctx, 'countlt')
         playername = self.playername(ctx, playername)
         if not split in ALL_SPLITS:
             return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
@@ -223,6 +266,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def countgt(self, ctx: commands.Context, split: str, time: str, playername: Optional[str] = None):
+        self.add(ctx, 'countgt')
         playername = self.playername(ctx, playername)
         if not split in ALL_SPLITS:
             return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
@@ -253,7 +297,19 @@ class Bot(commands.Bot):
         return cn
 
     @commands.command()
+    async def latest(self, ctx: commands.Context, split: str, playername: Optional[str] = None):
+        # TODO - n parameter
+        self.add(ctx, 'latest')
+        playername = self.playername(ctx, playername)
+        pcs = [p for p in USEFUL_DATA() if p.filter(split='nether', player=playername)]
+        if not pcs:
+            return await ctx.send(f'No nethers found for {playername}.')
+        lat = pcs[0].all_sorted()
+        return await ctx.send(f'Latest run: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]))
+
+    @commands.command()
     async def bastion_breakdown(self, ctx: commands.Context, playername: Optional[str] = None):
+        self.add(ctx, 'bastion_breakdown')
         playername = self.playername(ctx, playername)
         pcs = [p for p in USEFUL_DATA() if p.filter(split='nether', player=playername)]
         if len(pcs) == 0:

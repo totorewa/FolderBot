@@ -99,6 +99,10 @@ class PacemanObject:
                 continue
             self.splits[k] = timedelta(milliseconds=v)
 
+    def all_sorted(self):
+        return sorted([(k, v) for k, v in self.splits.items()], key=lambda t: t[1])
+
+
     def get_str(self, split: str):
         res = self.splits.get(split)
         if res is None:
