@@ -1,5 +1,5 @@
 from typing import Callable, Optional
-from twitchio import Chatter, PartialChatter
+from twitchio import Chatter, Message, PartialChatter
 from twitchio.ext import commands
 from daemon import data_dir, datafile, seconds_since_update, duration_since_update
 from query import DATA, PacemanObject, DATA_SORTED, ALL_SPLITS, USEFUL_DATA, td
@@ -87,6 +87,37 @@ class Bot(commands.Bot):
         # We are logged in and ready to chat and use commands...
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')
+
+    async def handle_commands(self, message: Message):
+        """
+        Handles commands from a given message.
+        This method checks if the message originates from the same channel
+        and if so, it delegates the handling of the commands to the parent class.
+        Args:
+            message (Message): The message object containing the command to be handled.
+        Returns:
+            None
+        """
+        if self.originates_from_same_channel(message):
+            await super().handle_commands(message)
+    
+    def originates_from_same_channel(self, message: Message):
+        """
+        Determines if a message originates from the same channel.
+        This method checks if the message's destination channel ID matches its originating channel ID.
+        If the originating channel ID is not present, it assumes the message does not originate from a shared chat.
+        Args:
+            message (Message): The message object containing tags with channel information.
+        Returns:
+            bool: True if the message originates from the same channel or if there is no originating channel ID,
+              False otherwise.
+        """
+        dest_channel_id = message.tags.get('room-id') if 'room-id' in message.tags else None
+        if dest_channel_id is None:
+            return False
+        originating_channel_id = message.tags.get('source-room-id') if 'source-room-id' in message.tags else None
+        return originating_channel_id is None or originating_channel_id == dest_channel_id
+
 
     @commands.command()
     async def quicksave(self, ctx: commands.Context): ##### help
