@@ -119,7 +119,7 @@ class Bot(commands.Bot):
         await ctx.send(helpers[0])
     @commands.command()
     async def all(self, ctx: commands.Context): ##### help
-        await ctx.send("?average, ?conversion, ?count, ?countlt, ?countgt, ?bastion_breakdown")
+        await ctx.send("?average, ?conversion, ?count, ?countlt, ?countgt, ?bastion_breakdown, ?latest, ?trend")
     @commands.command()
     async def botdiscord(self, ctx: commands.Context): ##### bot discord
         self.add(ctx, 'botdiscord')
@@ -143,7 +143,7 @@ class Bot(commands.Bot):
         if last_nether.get('nether') is not None:
             infos.append(f'Latest nether: {last_nether.get_str("nether")} by {last_nether.player}.')
         tot_calls = 0
-        stats_commands = {'average', 'conversion', 'count', 'countlt', 'countgt', 'bastion_breakdown', 'latest'}
+        stats_commands = {'average', 'conversion', 'count', 'countlt', 'countgt', 'bastion_breakdown', 'latest', 'trend'}
         stats_stats = [f'command_{s}' for s in stats_commands]
         for v in self.configuration.values():
             for st in stats_stats:
@@ -195,7 +195,7 @@ class Bot(commands.Bot):
         pcs = [p for p in USEFUL_DATA() if p.filter(split=splitname, player=playername)]
         if len(pcs) == 0:
             return await ctx.send(f'{playername} has no known {splitname} AA splits.')
-        await ctx.send(f'Average AA {splitname} for {playername}: {td.average(ts=[pc.get(splitname) for pc in pcs])} (sample: {len(pcs)})')
+        await ctx.send(f'Average AA {splitname} for {playername}: {td.average(ts=[pc.always_get(splitname) for pc in pcs])} (sample: {len(pcs)})')
 
     @commands.command()
     async def conversion(self, ctx: commands.Context, split1: str, split2: str, playername: Optional[str] = None):
@@ -303,9 +303,47 @@ class Bot(commands.Bot):
         playername = self.playername(ctx, playername)
         pcs = [p for p in USEFUL_DATA() if p.filter(split=split, player=playername)]
         if not pcs:
-            return await ctx.send(f'No nethers found for {playername}.')
+            return await ctx.send(f'No {split} splits found for {playername}.')
         lat = pcs[0].all_sorted()
-        return await ctx.send(f'Latest {split} for {playername}: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]))
+        sz = pcs[0].time_since()
+        if sz is not None:
+            sz = str(sz)
+            sz = sz.rsplit(':', maxsplit=1)[0]
+            adder = f' ({sz} ago)'
+        else:
+            adder = ''
+        return await ctx.send(f'Latest {split} for {playername}: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]) + adder)
+
+    @commands.command()
+    async def trend(self, ctx: commands.Context, split: str = 'nether', playername: Optional[str] = None):
+        from datetime import timedelta
+        # TODO - n parameter
+        self.add(ctx, 'trend')
+        playername = self.playername(ctx, playername)
+        pcs = [p for p in USEFUL_DATA() if p.filter(split=split, player=playername)]
+        if not pcs:
+            return await ctx.send(f'Not enough {split} splits found for {playername}.')
+        # LATEST TO NOT LATEST
+        d = [y for y in [x.get(split) for x in pcs] if y is not None]
+        at = td.average(d) # all time average
+        ld = len(d)
+        # we'll take the latest 50, or the latest 1/3, whichever is SMALLER.
+        num = min((ld//3), 50)
+        newest = td.average(d[0:num])
+        if newest == -1 or at == -1:
+            return await ctx.send(f'Odd error, sorry eh.')
+        diff = newest.src - at.src
+
+        root = f"All-time average {split} split for {playername} is {at} (sample: {ld}). Last {num} average is {newest}. "
+        if diff > timedelta(seconds=0):
+            # slower
+            root += f'That is roughly {td(diff)} slower.'
+        else:
+            diff = diff * -1
+            # faster :)
+            root += f'That is roughly {td(diff)} faster, nice!'
+        
+        return await ctx.send(root)
 
     @commands.command()
     async def bastion_breakdown(self, ctx: commands.Context, playername: Optional[str] = None):

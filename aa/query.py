@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-from daemon import auto_update, datafile
+from daemon import auto_update, datafile, duration_since
 import json
 from collections import defaultdict
+from datetime import timedelta
 
 class td:
     def __init__(self, t):
-        from datetime import timedelta
         assert t is not None
         if isinstance(t, str):
             if ':' not in t:
@@ -43,8 +43,7 @@ class td:
         return self.src.total_seconds()
 
     @staticmethod
-    def average(ts: list):
-        from datetime import timedelta
+    def average(ts: list[timedelta]):
         if len(ts) == 0:
             return -1
         l = [t.total_seconds() for t in ts]
@@ -87,6 +86,7 @@ class PacemanObject:
         self.player = d["nickname"]
         # don't care uuid for now.
         self.twitch_root = d.get("twitch")
+        self.inserted = d.get("insertTime")
 
         # NOTE: insert_time is when nether was entered.
 
@@ -102,6 +102,10 @@ class PacemanObject:
     def all_sorted(self):
         return sorted([(k, v) for k, v in self.splits.items()], key=lambda t: t[1])
 
+    def time_since(self):
+        if self.inserted is None:
+            return None
+        return duration_since(self.inserted)
 
     def get_str(self, split: str):
         res = self.splits.get(split)
@@ -127,6 +131,9 @@ class PacemanObject:
 
     def get(self, split: str):
         return self.splits.get(split)
+
+    def always_get(self, split: str):
+        return self.splits[split]
 
     def filter(self, split=None, player=None):
         # meh quick and dirty it works I guess
