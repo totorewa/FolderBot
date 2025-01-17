@@ -61,8 +61,10 @@ class Bot(commands.Bot):
         with open(datafile("folderbot.json"), "w") as file:
             import json
             json.dump(self.configuration, file, indent=2)
+        print('Saved data.')
 
     def add(self, ctx: commands.Context, command: str):
+        import random
         cn = ctx.channel.name.lower()
         unknown = '^ unknown' 
         if cn not in self.configuration:
@@ -75,6 +77,10 @@ class Bot(commands.Bot):
         if cmd not in loc:
             loc[cmd] = 0
         loc[cmd] += 1
+
+        if random.random() < 0.1:
+            self.save()
+
 
     async def event_ready(self):
         # Notify us when everything is ready!
