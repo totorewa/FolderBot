@@ -140,7 +140,8 @@ class Bot(commands.Bot):
             "AA Paceman extension: ?statscommands -> List of stats commands with details (WIP), "
             "?all -> List of all commands (no details) "
             "?help 2 -> Configuration/Setup, ?help 3 -> List of splits, ?help 4 -> Metainformation",
-            "(help 2) ?join -> Join the bot to your channel, ?setplayer -> Set the default player for this channel",
+            "(help 2) ?join -> Join the bot to your channel, ?setplayer -> Set the default player"
+            "for this channel, ?aapaceman -> Show aa-paceman setup link",
             f"(help 3) All splits: {', '.join(ALL_SPLITS)}",
             '(help 4) ?info -> Metadata on bot status, ?botdiscord -> Server with bot information, ?about -> Credits'
         ]
@@ -157,6 +158,11 @@ class Bot(commands.Bot):
     @commands.command()
     async def all(self, ctx: commands.Context): ##### help
         await ctx.send("?average, ?conversion, ?count, ?countlt, ?countgt, ?bastion_breakdown, ?latest, ?trend")
+    @commands.command()
+    async def aapaceman(self, ctx: commands.Context): ##### help
+        await ctx.send("AACord message link: "
+                "https://discord.com/channels/835893596992438372/835893596992438375/1330305232516677733"
+                " (how to set up aa paceman)")
     @commands.command()
     async def botdiscord(self, ctx: commands.Context): ##### bot discord
         self.add(ctx, 'botdiscord')
