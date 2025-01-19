@@ -329,6 +329,9 @@ class Bot(commands.Bot):
             return await ctx.send(f'{playername} has {len(pcs)} known {split} times slower than {minimum}.')
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
+        if playername.strip() == '!total':
+            # Special case
+            return playername.strip()
         if playername is not None:
             return clean(playername)
         cn = ctx.channel.name.lower()

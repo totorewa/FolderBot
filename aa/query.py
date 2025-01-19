@@ -139,7 +139,7 @@ class PacemanObject:
         # meh quick and dirty it works I guess
         if split is not None and not self.has(split):
             return False
-        if player is not None and not self.is_player(player):
+        if player is not None and (not self.is_player(player) and player != '!total'):
             return False
         return True
 
