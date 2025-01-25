@@ -6,6 +6,58 @@ from query import DATA, PacemanObject, DATA_SORTED, ALL_SPLITS, USEFUL_DATA, td
 from sys import argv
 
 
+class ParseResult:
+    def __init__(self, split: Optional[str], player: str, time: Optional[td]) -> None:
+        self.player = player
+        self.split = split
+        self.time = time
+
+    def split_str(self):
+        if self.split is not None:
+            return self.split
+        return 'nether'
+
+    def player_str(self):
+        if self.player == '!total':
+            return 'Playerbase'
+        return self.player
+
+    def tr_str(self):
+        if self.time is not None:
+            return f' (in the last {self.time})'
+        return ''
+
+    def data(self):
+        d = USEFUL_DATA(self.split, self.player)
+        if self.time is None:
+            return d
+        ret: list[PacemanObject] = list()
+        for o in d:
+            match_time_since = o.time_since()
+            if match_time_since is None:
+                continue
+            seconds_since_run = match_time_since.total_seconds()
+            if seconds_since_run <= self.time.total_seconds():
+                ret.append(o)
+        return ret
+
+    async def with_data(self, ctx: commands.Context):
+        data = self.data()
+        if not data:
+            if self.player == '!total':
+                if self.time is not None:
+                    await ctx.send(f'Could not find any {self.split_str()} in the last {self.time}')
+                else:
+                    await ctx.send(f'Could not find any instances of the split {self.split_str()}, are you sure it\'s spelled correctly?')
+            elif self.time is not None:
+                await ctx.send(f'Could not find any {self.split_str()} in the last {self.time}')
+            else:
+                # Defined player + no time span
+                await ctx.send(f'Could not find any {self.split_str()} for the player {self.player}')
+            return None
+        return data
+            
+
 def clean(s: str):
     return ''.join([ch for ch in s if ch.isalnum() or ch == '_'])
 
@@ -228,22 +280,70 @@ class Bot(commands.Bot):
         await self.join_channels([cn])
         return await ctx.send(f'Theoretically joined {cn}. Note: If you have follower mode chat limitations, you MUST mod FolderBot for it to work in your channel.')
 
-    @commands.command()
-    async def average(self, ctx: commands.Context, splitname: str, playername: Optional[str] = None):
-        self.add(ctx, 'average')
-        playername = self.playername(ctx, playername)
-        splitname = splitname.lower()
-        if not splitname in ALL_SPLITS:
-            return await ctx.send(f'{splitname} is not a valid AA split: {ALL_SPLITS}')
-        pcs = [p for p in USEFUL_DATA() if p.filter(split=splitname, player=playername)]
-        if len(pcs) == 0:
-            return await ctx.send(f'{playername} has no known {splitname} AA splits.')
-        await ctx.send(f'Average AA {splitname} for {playername}: {td.average(ts=[pc.always_get(splitname) for pc in pcs])} (sample: {len(pcs)})')
+    ########################################################################################
+    ############################# Methods for stat querying :) #############################
+    ########################################################################################
+    async def parse(self, ctx: commands.Context, *args: str):
+        split: Optional[str] = None
+        player: Optional[str] = None
+        time_range: Optional[td] = None
+        for arg in args:
+            if arg.lower() in ALL_SPLITS:
+                if split is not None:
+                    await ctx.send(f'Argument {arg} provided (parsed as split) but {split} was already provided!')
+                    return None
+                split = arg.lower()
+                continue
+            tdp = td.try_parse(arg.lower())
+            if tdp is not None:
+                if time_range is not None:
+                    await ctx.send(f'Argument {arg} provided (parsed as time range) but {time_range} was already provided!')
+                    return None
+                time_range = tdp
+                continue
+            # It should be a valid player.
+            if arg != '!total' and clean(arg) != arg:
+                await ctx.send(f'Argument {arg} provided (parsed as player) but is not a valid player.')
+                return None
+            if player is not None:
+                await ctx.send(f'Argument {arg} provided (parsed as player) but {player} was already provided!')
+                return None
+            player = self.playername(ctx, arg)
+        if player is None: # Always default player to the streamer
+            player = self.playername(ctx, None)
+        return ParseResult(split, player, time_range)
+
+    async def parse_get(self, ctx: commands.Context, *args: str):
+        pr = await self.parse(ctx, *args)
+        if pr is not None:
+            return (pr, await pr.with_data(ctx))
+        return (None, None)
 
     @commands.command()
-    async def conversion(self, ctx: commands.Context, split1: str, split2: str, playername: Optional[str] = None):
+    async def test_parse(self, ctx: commands.Context, *args: str):
+        pr = await self.parse(ctx, *args)
+        if pr is None:
+            return # Failed parse.
+        return await ctx.send(f'Parsed player as {pr.player_str()}, time range as {pr.time}, and split as {pr.split_str()}')
+            
+    @commands.command()
+    async def average(self, ctx: commands.Context, *args: str):
+        self.add(ctx, 'average')
+        pr, pcs = await self.parse_get(ctx, *args)
+        if pr is None or pcs is None:
+            return
+        #if not splitname in ALL_SPLITS:
+        #    return await ctx.send(f'{splitname} is not a valid AA split: {ALL_SPLITS}')
+        await ctx.send(f'Average AA {pr.split_str()} for {pr.player_str()}: {td.average(ts=[pc.always_get(pr.split_str()) for pc in pcs])} (sample: {len(pcs)}){pr.tr_str()}')
+
+    @commands.command()
+    async def conversion(self, ctx: commands.Context, split1: str, split2: str, *args: str):
         self.add(ctx, 'conversion')
-        playername = self.playername(ctx, playername)
+        pr = await self.parse(ctx, *args)
+        if pr is None:
+            return
+        if pr.split is not None:
+            return await ctx.send(f'Found third split {pr.split} - likely parse failure.')
         # yikes need to do some refactoring
         split1 = split1.lower()
         split2 = split2.lower()
@@ -251,32 +351,35 @@ class Bot(commands.Bot):
             if not split in ALL_SPLITS:
                 return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
 
-        pcs = [p for p in USEFUL_DATA() if p.filter(split=split1, player=playername)]
+        data = await pr.with_data(ctx)
+        if data is None:
+            return
+        pcs = [p for p in data if p.filter(split=split1)]
         if len(pcs) == 0:
-            return await ctx.send(f'{playername} has no known {split1} AA splits.')
+            return await ctx.send(f'{pr.player_str()} has no known {split1} AA splits.')
         n = len(pcs)
         x = len([p for p in pcs if p.has(split2)])
-        await ctx.send(f'{pctg(n, x)}% ({x} / {n}) of {playername}\'s AA {split1} splits lead to starting {split2} splits.')
+        await ctx.send(f'{pctg(n, x)}% ({x} / {n}) of {pr.player_str()}\'s AA {split1} splits lead to starting {split2} splits.{pr.tr_str()}')
 
     @commands.command()
-    async def count(self, ctx: commands.Context, split: str, playername: Optional[str] = None):
+    async def count(self, ctx: commands.Context, *args):
         self.add(ctx, 'count')
-        playername = self.playername(ctx, playername)
-        if not split in ALL_SPLITS:
-            return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
-        if playername == '!total':
-            playername = None
-        pcs = [p for p in USEFUL_DATA() if p.filter(split=split, player=playername)]
-        d = sorted(pcs, key=lambda p: p.get(split) or 0)
-        if not d:
-            return await ctx.send(f'No {split} times found for {playername}.')
-        fastest = d[0].get(split)
+        pr, pcs = await self.parse_get(ctx, *args)
+        if pr is None or pcs is None:
+            return
+        try:
+            d = sorted(pcs, key=lambda p: p.always_get(pr.split_str()))
+        except Exception as e:
+            print(e)
+            return await ctx.send(f'Encountered exception - Please message DesktopFolder :)')
+
+        fastest = d[0].always_get(pr.split_str())
         fastest_name = d[0].player
-        seed = f'{len(pcs)} known {split} times. Fastest: {td(fastest)}'
-        if playername is None:
-            return await ctx.send(f'There are {seed} (by {fastest_name})')
+        seed = f'{len(pcs)} known {pr.split} times. Fastest: {td(fastest)}'
+        if pr.player == '!total':
+            return await ctx.send(f'There are {seed} (by {fastest_name}){pr.tr_str()}')
         else:
-            return await ctx.send(f'{playername} has {seed}')
+            return await ctx.send(f'{pr.player} has {seed}{pr.tr_str()}')
 
     def data_filtered(self, ctx: commands.Context, split: Optional[str], playername: Optional[str] = None):
         if playername == None:
@@ -287,46 +390,46 @@ class Bot(commands.Bot):
         return src
 
     @commands.command()
-    async def countlt(self, ctx: commands.Context, split: str, time: str, playername: Optional[str] = None):
+    async def countlt(self, ctx: commands.Context, time: str, *args):
         self.add(ctx, 'countlt')
-        playername = self.playername(ctx, playername)
-        if not split in ALL_SPLITS:
-            return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
-        if playername == '!total':
-            playername = None
-        pcs = self.data_filtered(ctx, split, playername)
-        pcs = [t for t in [p.get(split) for p in pcs] if t is not None]
+        #if not split in ALL_SPLITS:
+        #    return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
+        pr, pcs = await self.parse_get(ctx, *args)
+        if pr is None or pcs is None:
+            return
+
+        pcs = [t for t in [p.get(pr.split_str()) for p in pcs] if t is not None]
         try:
             maximum = td(time)
         except Exception:
-            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours')
+            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours (note: countg/lt are now time followed by split, not split followed by time, sorry.')
         pcs = [t for t in pcs if t <= maximum.src]
 
-        if playername is None:
-            return await ctx.send(f'There are {len(pcs)} known {split} times faster than {maximum}.')
+        if pr.player == '!total':
+            return await ctx.send(f'There are {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{playername} has {len(pcs)} known {split} times faster than {maximum}.')
+            return await ctx.send(f'{pr.player} has {len(pcs)} known {pr.split_str} times faster than {maximum}.{pr.tr_str()}')
 
     @commands.command()
     async def countgt(self, ctx: commands.Context, split: str, time: str, playername: Optional[str] = None):
         self.add(ctx, 'countgt')
-        playername = self.playername(ctx, playername)
-        if not split in ALL_SPLITS:
-            return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
-        if playername == '!total':
-            playername = None
-        pcs = self.data_filtered(ctx, split, playername)
-        pcs = [t for t in [p.get(split) for p in pcs] if t is not None]
+        #if not split in ALL_SPLITS:
+        #    return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
+        pr, pcs = await self.parse_get(ctx, *args)
+        if pr is None or pcs is None:
+            return
+
+        pcs = [t for t in [p.get(pr.split_str()) for p in pcs] if t is not None]
         try:
             minimum = td(time)
         except Exception:
             return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours')
         pcs = [t for t in pcs if t > minimum.src]
 
-        if playername is None:
-            return await ctx.send(f'There are {len(pcs)} known {split} times slower than {minimum}.')
+        if pr.player == '!total':
+            return await ctx.send(f'There are {len(pcs)} known {split} times slower than {minimum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{playername} has {len(pcs)} known {split} times slower than {minimum}.')
+            return await ctx.send(f'{playername} has {len(pcs)} known {split} times slower than {minimum}.{pr.tr_str()}')
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
         if playername and playername.strip() == '!total':
@@ -343,13 +446,12 @@ class Bot(commands.Bot):
         return cn
 
     @commands.command()
-    async def latest(self, ctx: commands.Context, split: str = 'nether', playername: Optional[str] = None):
+    async def latest(self, ctx: commands.Context, *args):
         # TODO - n parameter
         self.add(ctx, 'latest')
-        playername = self.playername(ctx, playername)
-        pcs = [p for p in USEFUL_DATA() if p.filter(split=split, player=playername)]
-        if not pcs:
-            return await ctx.send(f'No {split} splits found for {playername}.')
+        pr, pcs = await self.parse_get(ctx, *args)
+        if pr is None or pcs is None:
+            return
         lat = pcs[0].all_sorted()
         sz = pcs[0].time_since()
         if sz is not None:
@@ -358,19 +460,18 @@ class Bot(commands.Bot):
             adder = f' ({sz} ago)'
         else:
             adder = ''
-        return await ctx.send(f'Latest {split} for {playername}: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]) + adder)
+        return await ctx.send(f'Latest {pr.split_str()}{pr.tr_str()} for {pr.player_str()}: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]) + adder)
 
     @commands.command()
-    async def trend(self, ctx: commands.Context, split: str = 'nether', playername: Optional[str] = None):
+    async def trend(self, ctx: commands.Context, *args):
         from datetime import timedelta
         # TODO - n parameter
         self.add(ctx, 'trend')
-        playername = self.playername(ctx, playername)
-        pcs = [p for p in USEFUL_DATA() if p.filter(split=split, player=playername)]
-        if not pcs:
-            return await ctx.send(f'Not enough {split} splits found for {playername}.')
+        pr, pcs = await self.parse_get(ctx, *args)
+        if pr is None or pcs is None:
+            return
         # LATEST TO NOT LATEST
-        d = [y for y in [x.get(split) for x in pcs] if y is not None]
+        d = [y for y in [x.get(pr.split_str()) for x in pcs] if y is not None]
         at = td.average(d) # all time average
         ld = len(d)
         # we'll take the latest 50, or the latest 1/3, whichever is SMALLER.
@@ -380,7 +481,7 @@ class Bot(commands.Bot):
             return await ctx.send(f'Odd error, sorry eh.')
         diff = newest.src - at.src
 
-        root = f"All-time average {split} split for {playername} is {at} (sample: {ld}). Last {num} average is {newest}. "
+        root = f"All-time average {pr.split_str()} split{pr.tr_str()} for {pr.player_str()} is {at} (sample: {ld}). Last {num} average is {newest}. "
         if diff > timedelta(seconds=0):
             # slower
             root += f'That is roughly {td(diff)} slower.'
@@ -392,12 +493,11 @@ class Bot(commands.Bot):
         return await ctx.send(root)
 
     @commands.command()
-    async def bastion_breakdown(self, ctx: commands.Context, playername: Optional[str] = None):
+    async def bastion_breakdown(self, ctx: commands.Context, *args):
         self.add(ctx, 'bastion_breakdown')
-        playername = self.playername(ctx, playername)
-        pcs = [p for p in USEFUL_DATA() if p.filter(split='nether', player=playername)]
-        if len(pcs) == 0:
-            return await ctx.send(f'{playername} has no known AA nethers.')
+        pr, pcs = await self.parse_get(ctx, *args)
+        if pr is None or pcs is None:
+            return
 
         def pctgwith(l: list[PacemanObject]):
             n = len(l)
@@ -422,7 +522,7 @@ class Bot(commands.Bot):
             ]
             if x != '' 
         ])
-        await ctx.send(f'Bastion conversion breakdown for {playername}: {brk}')
+        await ctx.send(f'Bastion conversion breakdown for {pr.player_str()}{pr.tr_str()}: {brk}')
 
 
 if __name__ == '__main__':
