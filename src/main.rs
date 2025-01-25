@@ -934,6 +934,8 @@ impl IRCBotClient {
                     "commands" => |p: &Player| p.sent_commands as i64,
                     "rolled_tridents" => |p: &Player| p.tridents_rolled as i64,
                     "gunpowder" | "gp" => |p: &Player| p.best_gp as i64,
+                    "d20" => |p: &Player| p.max_d20_rolled as i64,
+                    "fumbles" => |p: &Player| p.min_d20_rolled as i64,
                     "yahtzee" => {
                         // hacky work around to not being able to capture self.yahtzee in the lambda
                         match self.yahtzee.as_ref() {
@@ -1466,6 +1468,43 @@ impl IRCBotClient {
                         }
                     },
                 }
+            }
+            "feature:d20" => {
+                let split_args = split_args(trim_args_end(&args));
+                match split_args.get(0).map(|s| s.as_ref()) {
+                    Some("stats") => {
+                        let stats_user = match split_args.get(1) {
+                            Some(a) => self.player_data.player_or(&a.to_string(), &user),
+                            None => pd,
+                        };
+                        reply_and_continue!(&format!("d20 stats for {}: {} rolls, {} critical hits, {} fumbles, {:.2} average", stats_user.name(), stats_user.d20_rolled, stats_user.max_d20_rolled, stats_user.min_d20_rolled, stats_user.d20_acc as f64 / stats_user.d20_rolled as f64));
+                    }
+                    Some("info") => {
+                        reply_and_continue!(&"Rolls a d20 die. Don't roll a 1, it could be deadly! Suggested by carl7879".to_string());
+                    }
+                    _ => {}
+                }
+
+                let mut rng = thread_rng();
+                let roll = rng.gen_range(1..=20);
+                pd.d20_rolled += 1;
+                pd.d20_acc += roll as u64;
+
+                let nick = pd.name();
+                let response = match roll {
+                    1 => {
+                        pd.min_d20_rolled += 1;
+                        pd.deaths += 1;
+                        pd.death = Some(cur_time_or_0());
+                        random_response("D20_FUMBLE")
+                    },
+                    20 => {
+                        pd.max_d20_rolled += 1;
+                        random_response("D20_CRIT_HIT")
+                    },
+                    _ => if rng.gen_bool(0.75) { "You rolled a {roll}, {ur}" } else { random_response("D20_GENERIC") },
+                };
+                send_msg(&response.replace("{roll}", &roll.to_string()).replace("{ur}", &nick)).await;
             }
             #[cfg(feature = "audio")]
             "admin:mute" => {
