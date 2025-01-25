@@ -48,6 +48,16 @@ pub struct Player {
     pub best_gp: u64,
     #[serde(default)]
     pub max_gp_rolled: u32,
+
+    // d20 metadata
+    #[serde(default)]
+    pub d20_rolled: u64,
+    #[serde(default)]
+    pub d20_acc: u64,
+    #[serde(default)]
+    pub max_d20_rolled: u64,
+    #[serde(default)]
+    pub min_d20_rolled: u64,
 }
 
 #[derive(Default)]

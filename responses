@@ -146,6 +146,27 @@ Nein.
 No drop...
 It didn't drop. Have you considered using a looting sword, instead of manually punching them? Maybe that's where you're losing time over Feinberg.
 
+### D20_FUMBLE:
+Oh no, {ur}, you threw too hard and died... and you only rolled a nat 1. IMDEAD
+A 1? Really? That's just embarrassing, {ur}. IMDEAD
+Yikes, a 1. Maybe you should try rolling with your other hand, {ur}. IMDEAD
+A 1? Did you even try, {ur}? IMDEAD
+Rolling a 1? That's a special kind of talent, {ur}. IMDEAD
+
+### D20_CRIT_HIT:
+Wow, a 20! You must have bribed the dice gods, {ur}.
+A 20? Impressive, {ur}. Did you sell your soul for that?
+A 20! Looks like someone's on fire today, {ur}.
+Critical hit! {ur}, you just rolled a natural 20!
+A 20? Are you sure you didn't use loaded dice, {ur}?
+
+### D20_GENERIC:
+A {roll}? Not bad, {ur}. Not great, but not bad.
+You rolled a {roll}. Could be worse, could be better.
+A {roll}? Meh, I've seen better, {ur}.
+{roll}? That's... okay, I guess, {ur}.
+A {roll}? Well, at least it's not a 1, {ur}.
+
 ### NICK_SET:
 Ok, "{ur}"... ok.
 Sure, I'll call you {ur}!
