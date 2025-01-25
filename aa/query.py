@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+from typing import Optional
 from daemon import auto_update, datafile, duration_since
 import json
 from collections import defaultdict
 from datetime import timedelta
 
 class td:
-    def __init__(self, t):
+    def __init__(self, t: timedelta | str):
         assert t is not None
         if isinstance(t, str):
             if ':' not in t:
@@ -30,8 +31,49 @@ class td:
                 seconds = int(seconds) + 60 * minutes
                 t = timedelta(seconds=seconds)
         self.src: timedelta = t
-        self.hours, rem = divmod(self.src.seconds, 3600)
+        # FIX: Use total_seconds() so we can have better timedeltas.
+        self.hours, rem = divmod(int(self.src.total_seconds()), 3600)
         self.minutes, self.seconds = divmod(rem, 60)
+
+    @staticmethod
+    def from_strings(d: Optional[str] = None, h: Optional[str] = None, m: Optional[str] = None, s: Optional[str] = None):
+        args = dict()
+        if d:
+            d = d.strip('d:')
+            args['days'] = int(d)
+        if h:
+            h = h.strip('h:')
+            args['hours'] = int(h)
+        if m:
+            m = m.strip('m:')
+            args['minutes'] = int(m)
+        if s:
+            s = s.strip('s:')
+            args['seconds'] = int(s)
+        return td(timedelta(**args))
+
+    @staticmethod
+    def try_parse(ts: str) -> 'Optional[td]':
+        import re
+        o = re.match(r'^(\d+d)?(\d+h)?(\d+m)?(\d+s)?$', ts)
+        if o is not None:
+            # Successful parse.
+            print(o.groups())
+            return td.from_strings(*o.groups())
+        o = re.match(r'^(\d+):(\d+)$', ts)
+        if o is not None:
+            m, s = o.groups()
+            return td.from_strings(m=m, s=s)
+        o = re.match(r'^(\d+):(\d+):(\d+)$', ts)
+        if o is not None:
+            h, m, s = o.groups()
+            return td.from_strings(h=h, m=m, s=s)
+        o = re.match(r'^(\d+):(\d+):(\d+):(\d+)$', ts)
+        if o is not None:
+            d, h, m, s = o.groups()
+            return td.from_strings(d=d, h=h, m=m, s=s)
+        return None 
+
 
     def __str__(self):
         src = f'{self.minutes:02}:{self.seconds:02}'
@@ -154,9 +196,9 @@ def DATA_SORTED() -> list[dict]:
     from daemon import duration_since
     return sorted(DATA(), key=lambda d: duration_since(d["insertTime"]).total_seconds())
 
-def USEFUL_DATA() -> list[PacemanObject]:
-    return [PacemanObject(d) for d in DATA_SORTED()]
-
+def USEFUL_DATA(splitname=None, playername=None) -> list[PacemanObject]:
+    data = [PacemanObject(d) for d in DATA_SORTED()]
+    return [p for p in data if p.filter(split=splitname, player=playername)]
 
 def unique_keys():
     d = defaultdict(lambda *args: 0)
