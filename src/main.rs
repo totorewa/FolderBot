@@ -1500,9 +1500,9 @@ impl IRCBotClient {
                     },
                     20 => {
                         pd.max_d20_rolled += 1;
-                        random_response("D20_20")
+                        random_response("D20_CRIT_HIT")
                     },
-                    _ => if rng.gen_bool(0.75) { "You rolled a {roll}, {ur}" } else { random_response("D20_NORMAL") },
+                    _ => if rng.gen_bool(0.75) { "You rolled a {roll}, {ur}" } else { random_response("D20_GENERIC") },
                 };
                 send_msg(&response.replace("{roll}", &roll.to_string()).replace("{ur}", &nick)).await;
             }
