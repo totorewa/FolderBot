@@ -387,7 +387,7 @@ class Bot(commands.Bot):
 
         fastest = d[0].always_get(pr.split_str())
         fastest_name = d[0].player
-        seed = f'{len(pcs)} known {pr.split} times. Fastest: {td(fastest)}'
+        seed = f'{len(pcs)} known {pr.split_str()} times. Fastest: {td(fastest)}'
         if pr.player == '!total':
             return await ctx.send(f'There are {seed} (by {fastest_name}){pr.tr_str()}')
         else:
@@ -460,7 +460,7 @@ class Bot(commands.Bot):
         if pr.player == '!total':
             return await ctx.send(f'There are {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{pr.player} has {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
+            return await ctx.send(f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
 
     @commands.command()
     async def countgt(self, ctx: commands.Context, time: str, *args: str):
@@ -481,7 +481,7 @@ class Bot(commands.Bot):
         if pr.player == '!total':
             return await ctx.send(f'There are {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{playername} has {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
+            return await ctx.send(f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
         if playername and playername.strip() == '!total':
