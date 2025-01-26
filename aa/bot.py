@@ -444,6 +444,10 @@ class Bot(commands.Bot):
     @commands.command()
     async def countlt(self, ctx: commands.Context, time: str, *args: str):
         self.add(ctx, 'countlt')
+        try:
+            maximum = td(time)
+        except Exception:
+            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours (note: countg/lt are now time followed by split, not split followed by time, sorry.')
         #if not split in ALL_SPLITS:
         #    return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
         pr, pcs = await self.parse_get(ctx, *args)
@@ -451,20 +455,20 @@ class Bot(commands.Bot):
             return
 
         pcs = [t for t in [p.get(pr.split_str()) for p in pcs] if t is not None]
-        try:
-            maximum = td(time)
-        except Exception:
-            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours (note: countg/lt are now time followed by split, not split followed by time, sorry.')
         pcs = [t for t in pcs if t <= maximum.src]
 
         if pr.player == '!total':
             return await ctx.send(f'There are {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{pr.player} has {len(pcs)} known {pr.split_str} times faster than {maximum}.{pr.tr_str()}')
+            return await ctx.send(f'{pr.player} has {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
 
     @commands.command()
-    async def countgt(self, ctx: commands.Context, split: str, time: str, playername: Optional[str] = None):
+    async def countgt(self, ctx: commands.Context, time: str, *args: str):
         self.add(ctx, 'countgt')
+        try:
+            minimum = td(time)
+        except Exception:
+            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours')
         #if not split in ALL_SPLITS:
         #    return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
         pr, pcs = await self.parse_get(ctx, *args)
@@ -472,16 +476,12 @@ class Bot(commands.Bot):
             return
 
         pcs = [t for t in [p.get(pr.split_str()) for p in pcs] if t is not None]
-        try:
-            minimum = td(time)
-        except Exception:
-            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours')
         pcs = [t for t in pcs if t > minimum.src]
 
         if pr.player == '!total':
-            return await ctx.send(f'There are {len(pcs)} known {split} times slower than {minimum}.{pr.tr_str()}')
+            return await ctx.send(f'There are {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{playername} has {len(pcs)} known {split} times slower than {minimum}.{pr.tr_str()}')
+            return await ctx.send(f'{playername} has {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
         if playername and playername.strip() == '!total':
