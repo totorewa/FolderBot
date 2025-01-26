@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Callable, Optional
 from twitchio import Chatter, Message, PartialChatter
 from twitchio.ext import commands
@@ -18,9 +19,12 @@ class ParseResult:
         return 'nether'
 
     def player_str(self):
-        if self.player == '!total':
+        if self.is_everyone():
             return 'Playerbase'
         return self.player
+
+    def is_everyone(self):
+        return self.player == '!total'
 
     def tr_str(self):
         if self.time is not None:
@@ -46,11 +50,12 @@ class ParseResult:
         if not data:
             if self.player == '!total':
                 if self.time is not None:
-                    await ctx.send(f'Could not find any {self.split_str()} in the last {self.time}')
+                    await ctx.send(f'Could not find any {self.split_str()} in the last {self.time} (for any player)')
                 else:
                     await ctx.send(f'Could not find any instances of the split {self.split_str()}, are you sure it\'s spelled correctly?')
             elif self.time is not None:
-                await ctx.send(f'Could not find any {self.split_str()} in the last {self.time}')
+                # defined player + time span
+                await ctx.send(f'Could not find any {self.split_str()} in the last {self.time} for the player {self.player}')
             else:
                 # Defined player + no time span
                 await ctx.send(f'Could not find any {self.split_str()} for the player {self.player}')
@@ -67,6 +72,8 @@ def partition(l: list, p: Callable):
     nopers = [x for x in l if not p(x)]
     return (has_it, nopers)
 
+def btd(time: timedelta):
+    return timedelta(seconds=int(time.total_seconds()))
 
 def pctg(a, b):
     return f'{round(100 * b / a, 2)}'
@@ -238,7 +245,7 @@ class Bot(commands.Bot):
         if last_nether.get('nether') is not None:
             infos.append(f'Latest nether: {last_nether.get_str("nether")} by {last_nether.player}.')
         tot_calls = 0
-        stats_commands = {'average', 'conversion', 'count', 'countlt', 'countgt', 'bastion_breakdown', 'latest', 'trend'}
+        stats_commands = {'average', 'conversion', 'count', 'countlt', 'countgt', 'bastion_breakdown', 'latest', 'trend', 'pb'}
         stats_stats = [f'command_{s}' for s in stats_commands]
         for v in self.configuration.values():
             for st in stats_stats:
@@ -283,7 +290,7 @@ class Bot(commands.Bot):
     ########################################################################################
     ############################# Methods for stat querying :) #############################
     ########################################################################################
-    async def parse(self, ctx: commands.Context, *args: str):
+    async def parse(self, ctx: commands.Context, *args: str, default_split: Optional[str] = None, default_all=False):
         split: Optional[str] = None
         player: Optional[str] = None
         time_range: Optional[td] = None
@@ -310,11 +317,16 @@ class Bot(commands.Bot):
                 return None
             player = self.playername(ctx, arg)
         if player is None: # Always default player to the streamer
-            player = self.playername(ctx, None)
+            if default_all:
+                player = '!total'
+            else:
+                player = self.playername(ctx, None)
+        if split is None and default_split is not None:
+            split = default_split
         return ParseResult(split, player, time_range)
 
-    async def parse_get(self, ctx: commands.Context, *args: str):
-        pr = await self.parse(ctx, *args)
+    async def parse_get(self, ctx: commands.Context, *args: str, default_split: Optional[str] = None, default_all=False):
+        pr = await self.parse(ctx, *args, default_split=default_split, default_all=default_all)
         if pr is not None:
             return (pr, await pr.with_data(ctx))
         return (None, None)
@@ -390,7 +402,47 @@ class Bot(commands.Bot):
         return src
 
     @commands.command()
-    async def countlt(self, ctx: commands.Context, time: str, *args):
+    async def pb(self, ctx: commands.Context, *args: str):
+        self.add(ctx, 'pb')
+        pr, pcs = await self.parse_get(ctx, *args, default_split='finish')
+        if pr is None or pcs is None:
+            return
+
+        try:
+            d = sorted(pcs, key=lambda p: p.always_get(pr.split_str()))
+        except Exception as e:
+            print(e)
+            return await ctx.send(f'Encountered exception - Please message DesktopFolder :)')
+        
+        fastest = d[0]
+        ftime = btd(fastest.always_get(pr.split_str()))
+        fplayer = d[0].player
+        ftimesince = d[0].time_since() or "Unknown time"
+        if isinstance(ftimesince, timedelta):
+            ftimesince = btd(ftimesince)
+        adder = '' if not pr.is_everyone() else f' (by {fplayer})'
+        await ctx.send(f'Best known {pr.split_str()}{pr.tr_str()}: {ftime}{adder} ({ftimesince} ago)')
+
+
+    @commands.command()
+    async def lb(self, ctx: commands.Context, *args: str):
+        self.add(ctx, 'lb')
+        pr, pcs = await self.parse_get(ctx, *args, default_split='finish', default_all=True)
+        if pr is None or pcs is None:
+            return
+        try:
+            d = sorted(pcs, key=lambda p: p.always_get(pr.split_str()))[0:5]
+        except Exception as e:
+            print(e)
+            return await ctx.send(f'Encountered exception - Please message DesktopFolder :)')
+
+        times = [f'{i+1}. {btd(o.always_get(pr.split_str()))}' + (f' ({o.player})' if pr.is_everyone() else '') for i, o in enumerate(d)]
+
+        await ctx.send(f'Top {len(times)} {pr.split_str()} times for {pr.player_str()}: ' + ', '.join(times))
+
+
+    @commands.command()
+    async def countlt(self, ctx: commands.Context, time: str, *args: str):
         self.add(ctx, 'countlt')
         #if not split in ALL_SPLITS:
         #    return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
