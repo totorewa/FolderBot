@@ -185,10 +185,15 @@ class PacemanObject:
         return True
 
 
+def ALLOWED_AA_RUN(o: dict):
+    if 'credits' in o and 'elytra' not in o:
+        return False
+    return o.get("nether", 0) > AA_TIME_BARRIER or 'elytra' in o
+
 def DATA() -> list[dict]:
     auto_update()
     data = json.load(open(datafile(DATAFILE)))
-    return [o for o in data if o.get("nether") > AA_TIME_BARRIER or 'elytra' in o]
+    return [o for o in data if ALLOWED_AA_RUN(o)]
 
 # Sorted by INSERT TIME!!!
 def DATA_SORTED() -> list[dict]:
