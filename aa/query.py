@@ -58,7 +58,6 @@ class td:
         o = re.match(r'^(\d+d)?(\d+h)?(\d+m)?(\d+s)?$', ts)
         if o is not None:
             # Successful parse.
-            print(o.groups())
             return td.from_strings(*o.groups())
         o = re.match(r'^(\d+):(\d+)$', ts)
         if o is not None:
