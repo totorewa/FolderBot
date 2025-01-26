@@ -542,7 +542,7 @@ class Bot(commands.Bot):
         else:
             return await ctx.send('Invalid number of arguments. Usage: ?aalb [board] <search>')
         uri = open(localfile("bad_aalb")).read().strip()
-        board = re.sub(r'[^a-zA-Z0-9]', '_', board)
+        board = re.sub(r'[^a-zA-Z0-9\.]', '_', board).lstrip('.')
 
         if search_term.isdigit():
             search_type = 'place'
