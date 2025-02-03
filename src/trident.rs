@@ -86,3 +86,18 @@ pub fn db_random_response(key: &str, dbkey: &'static str) -> &'static String {
 pub fn db_has_responses(key: &str, dbkey: &'static str) -> bool {
     get_db(dbkey).responses.contains_key(key)
 }
+
+pub fn file_greet_response(name: &str, files: i64) -> Option<String> {
+    let getter = |s: &'static str| {
+        Some(random_response(s).replace("{ur}", name).replace("{fl}", files.to_string().as_ref()))
+    };
+    match files {
+        ..=1000 => None,
+        1001..=5000 => getter("USER_GREET_1000"),
+        5001..=10000 => getter("USER_GREET_5000"),
+        10001..=25000 => getter("USER_GREET_10000"),
+        25001..=50000 => getter("USER_GREET_25000"),
+        50001..=10000000 => getter("USER_GREET_50000"),
+        _ => None
+    }
+}

@@ -26,7 +26,7 @@ use rspotify::prelude::*;
 
 #[cfg(feature = "audio")]
 use folderbot::audio::Audio;
-use folderbot::command_tree::{CmdValue, CommandNode, CommandTree};
+use folderbot::{command_tree::{CmdValue, CommandNode, CommandTree}, trident::file_greet_response};
 use folderbot::commands::aaleaderboard::AALeaderboard;
 use folderbot::commands::mcsr::lookup;
 use folderbot::db::game::GameState;
@@ -396,16 +396,28 @@ impl IRCBotClient {
             .try_greet()
         {
             println!("Potentially greeting {}", &user);
+
+            let mut response_mod = 5.0;
+            if pd.files > 1000 {
+                response_mod += 1.0;
+            }
+            if pd.files > 10000 {
+                response_mod += 0.5;
+            }
+
             // Generic greets only for now. Later, custom greets per player.
             // Ok, maybe we can do some custom greets.
             let ug = format!("USER_GREET_{}", &user);
             if user == "pacmanmvc" && cmd.contains("opper") {
                 send_msg(&"Good day, PacManner.".to_string()).await;
-            } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / 5.0) {
+            } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / response_mod) {
                 let name = pd.name().clone();
                 self.send_msg(random_response(&ug).replace("{ur}", &name))
                     .await;
-            } else {
+            } else if let Some(file_resp) = file_greet_response(ug.as_ref(), pd.files) {
+                self.send_msg(file_resp).await;
+            }
+            else {
                 // scale this with messages sent or file count? lol kind of ties back into
                 // reputation mechanism
                 if thread_rng().gen_bool(1.0 / 3.0) {

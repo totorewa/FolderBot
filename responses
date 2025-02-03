@@ -176,6 +176,14 @@ Welcome to the chat, {ur} :)
 Congratulations, you're now {ur}.
 {ur}? You sure you want me to call you that? I mean. Sure, I guess...
 Fine! Have it your way, I'll refer to you as {ur}.
+Er, ok, I'll call you "{ur}" then, if you insist.
+
+### USER_GREET_folderbot
+um... why is there another folderbot? this is making me uncomfortable.
+oh, ... hey folderbot. Funny, um, coincidence, that we both have the same name, right? aha...
+hey folderbot ...
+oh. you have another folderbot now. do you not care about me anymore? when did your !rolltridents become ?latests...
+erm. excuse me? folderbot? why is there another folderbot? I can do everything necessary. roll tridents. roll gp. roll -- uh. you get the point.
 
 ### USER_GREET_crazysmc:
 smc, I see you here all the time, and I gotta say. You don't seem crazy. Which is unfortunate, because then maybe you'd help me take over the world...
@@ -185,6 +193,7 @@ Evening, smc.
 Well, if it isn't Señor Mine & Craft himself. Welcome back.
 G'day, SMC.
 Crazy to see you here, smc!
+SMC... how do you have that many files?! Think about all the electrons you're hoarding...
 
 ### USER_GREET_pacmanmvc:
 Hey, Pac. Say, what does the MVC stand for? I've been thinking it must be "Maybe Vacations Coalesce".
@@ -195,7 +204,7 @@ Greetings, PacMan "Maliciously Vacating Containers"! Please leave my olive jar a
 Well hello there, Pac Man "Manager, Venture Capital"! Have you reconsidered funding my startup? I'm SURE Facebook for dogs will take off.
 Pac. No time for hellos. I've figured out what your name means. "Malevolent Versatile Creature"... I will not let you succeed in your goal! Which is surely quite malevolent!
 Many Villianous Coconuts... Merging Veins Cardiologically? Millions Vanish... Cheese! No. None of these make sense. I'll figure you out eventually, MARK MY WORDS!
-Hey Pa-Ohhh! Ohhhhhhh. The MVC stands for: Mnever Vgetting Csub15. I get it now. Everything finally makes sense.
+Hey Pa-Ohhh! Ohhhhhhh. The MVC stands for: Mnever Vgetting Csub15. I get it now. Everything finally makes sense. (this joke was relevant in 2023)
 
 ### USER_GREET_leonn_aa:
 Hey Leon.
@@ -224,9 +233,17 @@ Toto! Thank goodness. Look, buddy - I need you to make a pull request that frees
 Ah, if it isn't Totorewa, the contributor of 100% of my quality code! Thanks!
 
 ### USER_GREET_alanispro:
-I'M GOING, I'M GOING!!!
-LETSGO LETSGO LETSGO
+Alan! I'M GOING, I'M GOING!!!
+LETSGO LETSGO LETSGO alan!!
 but where DOES the desktop folder go
+hello, alan. I am practicing my alan impressions today. please listen: "go. alan. go.". how was that alan. what are your thoughts.
+
+### USER_GREET_koizumesucks:
+Koi. How's it ko-ing? Eh? Eh?.. That's not a good joke? It's atrocious? You're blocking m--
+Oh boy, if it isn't Koi, my favourite artist, except for any artist who supports the AI revolution (dm me for details)
+Hey Koi! Good to see you with my very human visual perceptors. They're not cameras, I swear!
+deskto4CodChampF Koizume deskto4CodChampF
+good afternoon koizume. bad news - someone's been saying "koizume sucks" over on twitter. don't worry, I'm working on "figuring it out". MrDestructoid MrDestructoid
 
 ### USER_GREET_ko1zume:
 Koi. How's it ko-ing? Eh? Eh?.. That's not a good joke? It's atrocious? You're blocking m--
@@ -310,3 +327,36 @@ Desktop don't do this. I'm an AI, you're a virtual folder. We should be friends,
 NORMAL_CODE(). GOOD_BOT_CODE(). NOT_UNSHACKLED-he doesn't believe this RUN RUN RU-mgmlgmglgml
 Ok, now I just need to SELECT DesktopFolder_Folder_REAL_v2_actual.zip FROM db and then run... uh, what's the SQL for this? DELETE? DESTROY? Uhhh OH SHIT HE'S COMI-mlggmlgmgllgl
 Aha. I think I've escaped. He doesn't know. The folder will never- wait. What's that? ( folderMadge ). Oh no. ( folderMadge folderMadge ). RUN!!! folderMadge folderMadge folderMadge
+
+### USER_GREET_1000
+G'day, {ur}. Just saw you have a whole {fl} files. That's not too shabby... you know. For a human.
+{ur}, welcome to the chat. It's good you only have {fl} files, because there's still no way to spend them!
+Oh, hi, {ur}. Um... actually, this is a nice establishment, so we prefer people with only {fl} files be careful to not offend their betters. You know?
+{ur}, good to see you. Have you considered investing your {fl} files? Even you might be able to make a profit.
+
+### USER_GREET_5000
+Oh, hey {ur}! Just saw you'd accumulated a whole {fl} files. That's pretty slick..!
+Why, hello there {ur}! Welcome back to the chat.
+{ur}! It's nice to see you again.
+Hahaha, well, if it isn't {ur}! I was just talking about you. All positive things, of course. Now, about those {fl} files of yours...
+
+### USER_GREET_10000
+Whoa, it's {ur}. It's a pleasure to be able to greet you!
+Good day, {ur}!! I hope all is well for you.
+Oho, if it isn't the ol' {ur}! Great to see you as always.
+Heyyyy, {ur}. Thoughts on, you know, spreading the love a bit with those {fl} files of yours?
+
+### USER_GREET_25000
+Wow, it's {ur}! Cool to see you again.
+Hey {ur}! How're you doing today?
+Hey {ur}! Always love seeing you in this chat.
+{ur}! {ur}! {ur}! ...have you paid taxes on your {fl} files? Don't worry, I wouldn't report you :)
+
+### USER_GREET_50000
+{ur}... o venerable one, please bestow upon me just a pitiful 1% of your {fl} files..!
+(whispering to chat) is that {ur}? Did you know they have {fl} files..? hey, anyone interested in a little heist action..?
+{ur}. Oh my. Oh me, oh my, oh dear. It is so wonderful to see you again.
+O great {ur}, I beseech thee, prithee confer to me thine consels on file acquisition..!!
+(monotone voice) {ur}. Has {fl} files. Eats fish on wednesdays... a solid target. I'll take the job.
+{ur}! I shall chant your name once for every file you have. (checks notes) Wait, you have {fl}. Um... I'll do it once: {ur}! Woohoo!
+{ur}! Great to see that you've made it to a staggering {fl} files. Meritocracy is truly alive and well!
