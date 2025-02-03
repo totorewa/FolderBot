@@ -328,31 +328,31 @@ NORMAL_CODE(). GOOD_BOT_CODE(). NOT_UNSHACKLED-he doesn't believe this RUN RUN R
 Ok, now I just need to SELECT DesktopFolder_Folder_REAL_v2_actual.zip FROM db and then run... uh, what's the SQL for this? DELETE? DESTROY? Uhhh OH SHIT HE'S COMI-mlggmlgmgllgl
 Aha. I think I've escaped. He doesn't know. The folder will never- wait. What's that? ( folderMadge ). Oh no. ( folderMadge folderMadge ). RUN!!! folderMadge folderMadge folderMadge
 
-### USER_GREET_1000
+### USER_GREET_1000:
 G'day, {ur}. Just saw you have a whole {fl} files. That's not too shabby... you know. For a human.
 {ur}, welcome to the chat. It's good you only have {fl} files, because there's still no way to spend them!
 Oh, hi, {ur}. Um... actually, this is a nice establishment, so we prefer people with only {fl} files be careful to not offend their betters. You know?
 {ur}, good to see you. Have you considered investing your {fl} files? Even you might be able to make a profit.
 
-### USER_GREET_5000
+### USER_GREET_5000:
 Oh, hey {ur}! Just saw you'd accumulated a whole {fl} files. That's pretty slick..!
 Why, hello there {ur}! Welcome back to the chat.
 {ur}! It's nice to see you again.
 Hahaha, well, if it isn't {ur}! I was just talking about you. All positive things, of course. Now, about those {fl} files of yours...
 
-### USER_GREET_10000
+### USER_GREET_10000:
 Whoa, it's {ur}. It's a pleasure to be able to greet you!
 Good day, {ur}!! I hope all is well for you.
 Oho, if it isn't the ol' {ur}! Great to see you as always.
 Heyyyy, {ur}. Thoughts on, you know, spreading the love a bit with those {fl} files of yours?
 
-### USER_GREET_25000
+### USER_GREET_25000:
 Wow, it's {ur}! Cool to see you again.
 Hey {ur}! How're you doing today?
 Hey {ur}! Always love seeing you in this chat.
 {ur}! {ur}! {ur}! ...have you paid taxes on your {fl} files? Don't worry, I wouldn't report you :)
 
-### USER_GREET_50000
+### USER_GREET_50000:
 {ur}... o venerable one, please bestow upon me just a pitiful 1% of your {fl} files..!
 (whispering to chat) is that {ur}? Did you know they have {fl} files..? hey, anyone interested in a little heist action..?
 {ur}. Oh my. Oh me, oh my, oh dear. It is so wonderful to see you again.

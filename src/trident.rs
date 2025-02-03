@@ -45,7 +45,10 @@ impl ResponseDB {
                 continue;
             }
             let Some(caps) = CATEGORY_RE.captures(&line) else {
-                ret.responses.entry(current_key.clone()).or_insert(Vec::new()).push(line);
+                ret.responses
+                    .entry(current_key.clone())
+                    .or_insert(Vec::new())
+                    .push(line);
                 continue;
             };
             current_key = String::from(&caps[1]);
@@ -73,7 +76,10 @@ fn get_db(key: &'static str) -> &'static ResponseDB {
 }
 
 pub fn random_response(key: &str) -> &'static String {
-    get_db("main").get(key).choose(&mut rand::thread_rng()).unwrap()
+    get_db("main")
+        .get(key)
+        .choose(&mut rand::thread_rng())
+        .unwrap()
 }
 
 pub fn has_responses(key: &str) -> bool {
@@ -81,7 +87,10 @@ pub fn has_responses(key: &str) -> bool {
 }
 
 pub fn db_random_response(key: &str, dbkey: &'static str) -> &'static String {
-    get_db(dbkey).get(key).choose(&mut rand::thread_rng()).unwrap()
+    get_db(dbkey)
+        .get(key)
+        .choose(&mut rand::thread_rng())
+        .unwrap()
 }
 pub fn db_has_responses(key: &str, dbkey: &'static str) -> bool {
     get_db(dbkey).responses.contains_key(key)
@@ -89,7 +98,16 @@ pub fn db_has_responses(key: &str, dbkey: &'static str) -> bool {
 
 pub fn file_greet_response(name: &str, files: i64) -> Option<String> {
     let getter = |s: &'static str| {
-        Some(random_response(s).replace("{ur}", name).replace("{fl}", files.to_string().as_ref()))
+        if has_responses(s) {
+            Some(
+                random_response(s)
+                    .replace("{ur}", name)
+                    .replace("{fl}", files.to_string().as_ref()),
+            )
+        } else {
+            println!("ERROR: {} has no response!", s);
+            Some("[Internal Error]".to_string())
+        }
     };
     match files {
         ..=1000 => None,
@@ -98,6 +116,6 @@ pub fn file_greet_response(name: &str, files: i64) -> Option<String> {
         10001..=25000 => getter("USER_GREET_10000"),
         25001..=50000 => getter("USER_GREET_25000"),
         50001..=10000000 => getter("USER_GREET_50000"),
-        _ => None
+        _ => None,
     }
 }
