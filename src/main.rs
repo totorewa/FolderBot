@@ -411,16 +411,19 @@ impl IRCBotClient {
             if user == "pacmanmvc" && cmd.contains("opper") {
                 send_msg(&"Good day, PacManner.".to_string()).await;
             } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / response_mod) {
+                println!("Sending USER user greet for {}", &user);
                 let name = pd.name().clone();
                 self.send_msg(random_response(&ug).replace("{ur}", &name))
                     .await;
             } else if let Some(file_resp) = file_greet_response(ug.as_ref(), pd.files) {
+                println!("Sending FILE user greet for {}", &user);
                 self.send_msg(file_resp).await;
             }
             else {
                 // scale this with messages sent or file count? lol kind of ties back into
                 // reputation mechanism
                 if thread_rng().gen_bool(1.0 / 3.0) {
+                    println!("Sending GENERIC user greet for {}", &user);
                     send_msg(&random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name()))
                         .await;
                 } else {
