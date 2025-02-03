@@ -408,6 +408,7 @@ impl IRCBotClient {
             // Generic greets only for now. Later, custom greets per player.
             // Ok, maybe we can do some custom greets.
             let ug = format!("USER_GREET_{}", &user);
+            let name2 = pd.name().clone();
             if user == "pacmanmvc" && cmd.contains("opper") {
                 send_msg(&"Good day, PacManner.".to_string()).await;
             } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / response_mod) {
@@ -415,7 +416,7 @@ impl IRCBotClient {
                 let name = pd.name().clone();
                 self.send_msg(random_response(&ug).replace("{ur}", &name))
                     .await;
-            } else if let Some(file_resp) = file_greet_response(ug.as_ref(), pd.files) {
+            } else if let Some(file_resp) = file_greet_response(&name2, pd.files) {
                 println!("Sending FILE user greet for {}", &user);
                 self.send_msg(file_resp).await;
             }

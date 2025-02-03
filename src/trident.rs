@@ -111,9 +111,9 @@ pub fn file_greet_response(name: &str, files: i64) -> Option<String> {
     };
     match files {
         ..=1000 => None,
-        1001..=5000 => getter("USER_GREET_1000"),
-        5001..=10000 => getter("USER_GREET_5000"),
-        10001..=25000 => getter("USER_GREET_10000"),
+        2001..=5000 => getter("USER_GREET_1000"),
+        7001..=10000 => getter("USER_GREET_5000"),
+        11001..=25000 => getter("USER_GREET_10000"),
         25001..=50000 => getter("USER_GREET_25000"),
         50001..=10000000 => getter("USER_GREET_50000"),
         _ => None,
