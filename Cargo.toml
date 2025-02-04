@@ -22,6 +22,7 @@ serde_with = { version = "2.2.0" }
 rspotify = { version = "0.12.0", features = ["env-file", "cli"] }
 libretranslate = "0.5.2"
 surf = "2.3.2"
+base64 = "0.22.1"
 
 [features]
 audio = ["dep:rodio"]

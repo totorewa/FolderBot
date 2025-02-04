@@ -1,2 +1,2 @@
-pub mod aaleaderboard;
+pub mod anyleaderboard;
 pub mod mcsr;
