@@ -7,6 +7,10 @@ from query import DATA, PacemanObject, DATA_SORTED, ALL_SPLITS, USEFUL_DATA, td
 from sys import argv
 
 
+async def do_send(ctx: commands.Context, s: str):
+    return await ctx.send(s.lstrip('?!/'))
+
+
 class ParseResult:
     def __init__(self, split: Optional[str], player: str, time: Optional[td]) -> None:
         self.player = player
@@ -50,15 +54,15 @@ class ParseResult:
         if not data:
             if self.player == '!total':
                 if self.time is not None:
-                    await ctx.send(f'Could not find any {self.split_str()} in the last {self.time} (for any player)')
+                    await do_send(ctx, f'Could not find any {self.split_str()} in the last {self.time} (for any player)')
                 else:
-                    await ctx.send(f'Could not find any instances of the split {self.split_str()}, are you sure it\'s spelled correctly?')
+                    await do_send(ctx, f'Could not find any instances of the split {self.split_str()}, are you sure it\'s spelled correctly?')
             elif self.time is not None:
                 # defined player + time span
-                await ctx.send(f'Could not find any {self.split_str()} in the last {self.time} for the player {self.player}')
+                await do_send(ctx, f'Could not find any {self.split_str()} in the last {self.time} for the player {self.player}')
             else:
                 # Defined player + no time span
-                await ctx.send(f'Could not find any {self.split_str()} for the player {self.player}')
+                await do_send(ctx, f'Could not find any {self.split_str()} for the player {self.player}')
             return None
         return data
             
@@ -181,13 +185,13 @@ class Bot(commands.Bot):
     @commands.command()
     async def quicksave(self, ctx: commands.Context): ##### help
         if not isinstance(ctx.author, Chatter):
-            return await ctx.send('No Chatter instance found.')
+            return await do_send(ctx, 'No Chatter instance found.')
         if ctx.author.name.lower() == 'desktopfolder':
             # yeah just me thanks.
             self.save()
-            return await ctx.send('Quicksaved state.')
+            return await do_send(ctx, 'Quicksaved state.')
         else:
-            return await ctx.send('Only the bot maintainer can use this command.')
+            return await do_send(ctx, 'Only the bot maintainer can use this command.')
 
     ########################################################################################
     ############################ Methods to send generic strings ###########################
@@ -206,30 +210,30 @@ class Bot(commands.Bot):
         ]
         p = page - 1
         if p < 0 or p >= len(helpers):
-            return await ctx.send(f"Page number is out of bounds (maximum: {len(helpers)})")
-        await ctx.send(helpers[p])
+            return await do_send(ctx, f"Page number is out of bounds (maximum: {len(helpers)})")
+        await do_send(ctx, helpers[p])
     @commands.command()
     async def statscommands(self, ctx: commands.Context): ##### help
         helpers = ["?average [splitname] [player] -> average split for a player, ?conversion "
                 "[split1] [split2] [player] -> % of split1s that turn into split2s, ?countlt "
                 "[split] [time] [player] -> Count the # of splits that are faster than [time]"]
-        await ctx.send(helpers[0])
+        await do_send(ctx, helpers[0])
     @commands.command()
     async def all(self, ctx: commands.Context): ##### help
-        await ctx.send("?average, ?conversion, ?count, ?countlt, ?countgt, ?bastion_breakdown, ?latest, ?trend")
+        await do_send(ctx, "?average, ?conversion, ?count, ?countlt, ?countgt, ?bastion_breakdown, ?latest, ?trend")
     @commands.command()
     async def aapaceman(self, ctx: commands.Context): ##### help
-        await ctx.send("AACord message link: "
+        await do_send(ctx, "AACord message link: "
                 "https://discord.com/channels/835893596992438372/835893596992438375/1330305232516677733"
                 " (how to set up aa paceman)")
     @commands.command()
     async def botdiscord(self, ctx: commands.Context): ##### bot discord
         self.add(ctx, 'botdiscord')
-        await ctx.send("For to-do list & feature requests: https://discord.gg/NSp5t3wfBP")
+        await do_send(ctx, "For to-do list & feature requests: https://discord.gg/NSp5t3wfBP")
     @commands.command()
     async def about(self, ctx: commands.Context): ##### about
         self.add(ctx, 'about')
-        await ctx.send("Made by DesktopFolder. Uses stats from Jojoe's Paceman AA API. Uses local caching to reduce API calls.")
+        await do_send(ctx, "Made by DesktopFolder. Uses stats from Jojoe's Paceman AA API. Uses local caching to reduce API calls.")
     @commands.command()
     async def info(self, ctx: commands.Context):  ##### info
         self.add(ctx, 'info')
@@ -252,7 +256,7 @@ class Bot(commands.Bot):
                 if st in v:
                     tot_calls += v[st]
         infos.append(f'~{tot_calls} total statistics queries made.')
-        await ctx.send(' '.join(infos))
+        await do_send(ctx, ' '.join(infos))
 
     ########################################################################################
     ############################# Methods to configure the bot #############################
@@ -261,31 +265,31 @@ class Bot(commands.Bot):
     async def setplayer(self, ctx: commands.Context, playername: str):
         self.add(ctx, 'setplayer')
         if not isinstance(ctx.author, Chatter):
-            return await ctx.send('Cannot validate that you are the broadcaster.')
+            return await do_send(ctx, 'Cannot validate that you are the broadcaster.')
         if not ctx.author.is_broadcaster:
-            return await ctx.send('Only the broadcaster can use this command.')
+            return await do_send(ctx, 'Only the broadcaster can use this command.')
         cn = ctx.channel.name.lower()
         if not cn in self.configuration:
-            return await ctx.send('Let me know if you see this.')
+            return await do_send(ctx, 'Let me know if you see this.')
         self.configuration[cn]['player'] = clean(playername)
         self.save()
-        return await ctx.send(f'Set default player to {playername}.')
+        return await do_send(ctx, f'Set default player to {playername}.')
 
     @commands.command()
     async def join(self, ctx: commands.Context, agree: str = ""):
         self.add(ctx, 'join')
         cn = ctx.author.name
         if cn is None:
-            return await ctx.send("Name was none; if this issue persists, contact DesktopFolder.")
+            return await do_send(ctx, "Name was none; if this issue persists, contact DesktopFolder.")
         if cn in self.configuration:
-            return await ctx.send(f"Bot is already joined to {cn}.")
+            return await do_send(ctx, f"Bot is already joined to {cn}.")
         cn = cn.lower()
         if agree != "agree":
-            return await ctx.send(f'Notice: This is in development. See {self.prefix}botdiscord for current todos/feature requests. If you are okay with intermittent downtime & potential bugs, and want to join this bot to your channel ({cn}), type {self.prefix}join agree')
+            return await do_send(ctx, f'Notice: This is in development. See {self.prefix}botdiscord for current todos/feature requests. If you are okay with intermittent downtime & potential bugs, and want to join this bot to your channel ({cn}), type {self.prefix}join agree')
         self.configuration[cn] = {"name": cn}
         self.save()
         await self.join_channels([cn])
-        return await ctx.send(f'Theoretically joined {cn}. Note: If you have follower mode chat limitations, you MUST mod FolderBot for it to work in your channel.')
+        return await do_send(ctx, f'Theoretically joined {cn}. Note: If you have follower mode chat limitations, you MUST mod FolderBot for it to work in your channel.')
 
     ########################################################################################
     ############################# Methods for stat querying :) #############################
@@ -297,23 +301,23 @@ class Bot(commands.Bot):
         for arg in args:
             if arg.lower() in ALL_SPLITS:
                 if split is not None:
-                    await ctx.send(f'Argument {arg} provided (parsed as split) but {split} was already provided!')
+                    await do_send(ctx, f'Argument {arg} provided (parsed as split) but {split} was already provided!')
                     return None
                 split = arg.lower()
                 continue
             tdp = td.try_parse(arg.lower())
             if tdp is not None:
                 if time_range is not None:
-                    await ctx.send(f'Argument {arg} provided (parsed as time range) but {time_range} was already provided!')
+                    await do_send(ctx, f'Argument {arg} provided (parsed as time range) but {time_range} was already provided!')
                     return None
                 time_range = tdp
                 continue
             # It should be a valid player.
             if arg != '!total' and clean(arg) != arg:
-                await ctx.send(f'Argument {arg} provided (parsed as player) but is not a valid player.')
+                await do_send(ctx, f'Argument {arg} provided (parsed as player) but is not a valid player.')
                 return None
             if player is not None:
-                await ctx.send(f'Argument {arg} provided (parsed as player) but {player} was already provided!')
+                await do_send(ctx, f'Argument {arg} provided (parsed as player) but {player} was already provided!')
                 return None
             player = self.playername(ctx, arg)
         if player is None: # Always default player to the streamer
@@ -336,7 +340,7 @@ class Bot(commands.Bot):
         pr = await self.parse(ctx, *args)
         if pr is None:
             return # Failed parse.
-        return await ctx.send(f'Parsed player as {pr.player_str()}, time range as {pr.time}, and split as {pr.split_str()}')
+        return await do_send(ctx, f'Parsed player as {pr.player_str()}, time range as {pr.time}, and split as {pr.split_str()}')
             
     @commands.command()
     async def average(self, ctx: commands.Context, *args: str):
@@ -345,8 +349,8 @@ class Bot(commands.Bot):
         if pr is None or pcs is None:
             return
         #if not splitname in ALL_SPLITS:
-        #    return await ctx.send(f'{splitname} is not a valid AA split: {ALL_SPLITS}')
-        await ctx.send(f'Average AA {pr.split_str()} for {pr.player_str()}: {td.average(ts=[pc.always_get(pr.split_str()) for pc in pcs])} (sample: {len(pcs)}){pr.tr_str()}')
+        #    return await do_send(ctx, f'{splitname} is not a valid AA split: {ALL_SPLITS}')
+        await do_send(ctx, f'Average AA {pr.split_str()} for {pr.player_str()}: {td.average(ts=[pc.always_get(pr.split_str()) for pc in pcs])} (sample: {len(pcs)}){pr.tr_str()}')
 
     @commands.command()
     async def conversion(self, ctx: commands.Context, split1: str, split2: str, *args: str):
@@ -355,23 +359,23 @@ class Bot(commands.Bot):
         if pr is None:
             return
         if pr.split is not None:
-            return await ctx.send(f'Found third split {pr.split} - likely parse failure.')
+            return await do_send(ctx, f'Found third split {pr.split} - likely parse failure.')
         # yikes need to do some refactoring
         split1 = split1.lower()
         split2 = split2.lower()
         for split in [split1, split2]:
             if not split in ALL_SPLITS:
-                return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
+                return await do_send(ctx, f'{split} is not a valid AA split: {ALL_SPLITS}')
 
         data = await pr.with_data(ctx)
         if data is None:
             return
         pcs = [p for p in data if p.filter(split=split1)]
         if len(pcs) == 0:
-            return await ctx.send(f'{pr.player_str()} has no known {split1} AA splits.')
+            return await do_send(ctx, f'{pr.player_str()} has no known {split1} AA splits.')
         n = len(pcs)
         x = len([p for p in pcs if p.has(split2)])
-        await ctx.send(f'{pctg(n, x)}% ({x} / {n}) of {pr.player_str()}\'s AA {split1} splits lead to starting {split2} splits.{pr.tr_str()}')
+        await do_send(ctx, f'{pctg(n, x)}% ({x} / {n}) of {pr.player_str()}\'s AA {split1} splits lead to starting {split2} splits.{pr.tr_str()}')
 
     @commands.command()
     async def count(self, ctx: commands.Context, *args):
@@ -383,15 +387,15 @@ class Bot(commands.Bot):
             d = sorted(pcs, key=lambda p: p.always_get(pr.split_str()))
         except Exception as e:
             print(e)
-            return await ctx.send(f'Encountered exception - Please message DesktopFolder :)')
+            return await do_send(ctx, f'Encountered exception - Please message DesktopFolder :)')
 
         fastest = d[0].always_get(pr.split_str())
         fastest_name = d[0].player
         seed = f'{len(pcs)} known {pr.split_str()} times. Fastest: {td(fastest)}'
         if pr.player == '!total':
-            return await ctx.send(f'There are {seed} (by {fastest_name}){pr.tr_str()}')
+            return await do_send(ctx, f'There are {seed} (by {fastest_name}){pr.tr_str()}')
         else:
-            return await ctx.send(f'{pr.player} has {seed}{pr.tr_str()}')
+            return await do_send(ctx, f'{pr.player} has {seed}{pr.tr_str()}')
 
     def data_filtered(self, ctx: commands.Context, split: Optional[str], playername: Optional[str] = None):
         if playername == None:
@@ -412,7 +416,7 @@ class Bot(commands.Bot):
             d = sorted(pcs, key=lambda p: p.always_get(pr.split_str()))
         except Exception as e:
             print(e)
-            return await ctx.send(f'Encountered exception - Please message DesktopFolder :)')
+            return await do_send(ctx, f'Encountered exception - Please message DesktopFolder :)')
         
         fastest = d[0]
         ftime = btd(fastest.always_get(pr.split_str()))
@@ -421,7 +425,7 @@ class Bot(commands.Bot):
         if isinstance(ftimesince, timedelta):
             ftimesince = btd(ftimesince)
         adder = '' if not pr.is_everyone() else f' (by {fplayer})'
-        await ctx.send(f'Best known {pr.split_str()}{pr.tr_str()}: {ftime}{adder} ({ftimesince} ago)')
+        await do_send(ctx, f'Best known {pr.split_str()}{pr.tr_str()}: {ftime}{adder} ({ftimesince} ago)')
 
 
     @commands.command()
@@ -434,11 +438,11 @@ class Bot(commands.Bot):
             d = sorted(pcs, key=lambda p: p.always_get(pr.split_str()))[0:5]
         except Exception as e:
             print(e)
-            return await ctx.send(f'Encountered exception - Please message DesktopFolder :)')
+            return await do_send(ctx, f'Encountered exception - Please message DesktopFolder :)')
 
         times = [f'{i+1}. {btd(o.always_get(pr.split_str()))}' + (f' ({o.player})' if pr.is_everyone() else '') for i, o in enumerate(d)]
 
-        await ctx.send(f'Top {len(times)} {pr.split_str()} times for {pr.player_str()}: ' + ', '.join(times))
+        await do_send(ctx, f'Top {len(times)} {pr.split_str()} times for {pr.player_str()}: ' + ', '.join(times))
 
 
     @commands.command()
@@ -447,9 +451,9 @@ class Bot(commands.Bot):
         try:
             maximum = td(time)
         except Exception:
-            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours (note: countg/lt are now time followed by split, not split followed by time, sorry.')
+            return await do_send(ctx, f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours (note: countg/lt are now time followed by split, not split followed by time, sorry.')
         #if not split in ALL_SPLITS:
-        #    return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
+        #    return await do_send(ctx, f'{split} is not a valid AA split: {ALL_SPLITS}')
         pr, pcs = await self.parse_get(ctx, *args)
         if pr is None or pcs is None:
             return
@@ -458,9 +462,9 @@ class Bot(commands.Bot):
         pcs = [t for t in pcs if t <= maximum.src]
 
         if pr.player == '!total':
-            return await ctx.send(f'There are {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
+            return await do_send(ctx, f'There are {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
+            return await do_send(ctx, f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
 
     @commands.command()
     async def countgt(self, ctx: commands.Context, time: str, *args: str):
@@ -468,9 +472,9 @@ class Bot(commands.Bot):
         try:
             minimum = td(time)
         except Exception:
-            return await ctx.send(f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours')
+            return await do_send(ctx, f'Invalid time {time}, follow format hh:mm:ss (hours/seconds optional, but seconds required for hours')
         #if not split in ALL_SPLITS:
-        #    return await ctx.send(f'{split} is not a valid AA split: {ALL_SPLITS}')
+        #    return await do_send(ctx, f'{split} is not a valid AA split: {ALL_SPLITS}')
         pr, pcs = await self.parse_get(ctx, *args)
         if pr is None or pcs is None:
             return
@@ -479,9 +483,9 @@ class Bot(commands.Bot):
         pcs = [t for t in pcs if t > minimum.src]
 
         if pr.player == '!total':
-            return await ctx.send(f'There are {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
+            return await do_send(ctx, f'There are {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
         else:
-            return await ctx.send(f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
+            return await do_send(ctx, f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
         if playername and playername.strip() == '!total':
@@ -512,7 +516,7 @@ class Bot(commands.Bot):
             adder = f' ({sz} ago)'
         else:
             adder = ''
-        return await ctx.send(f'Latest {pr.split_str()}{pr.tr_str()} for {pr.player_str()}: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]) + adder)
+        return await do_send(ctx, f'Latest {pr.split_str()}{pr.tr_str()} for {pr.player_str()}: ' + ', '.join([f'{s}: {td(t)}' for s, t in lat]) + adder)
 
     @commands.command()
     async def trend(self, ctx: commands.Context, *args):
@@ -530,7 +534,7 @@ class Bot(commands.Bot):
         num = min((ld//3), 50)
         newest = td.average(d[0:num])
         if newest == -1 or at == -1:
-            return await ctx.send(f'Odd error, sorry eh.')
+            return await do_send(ctx, f'Odd error, sorry eh.')
         diff = newest.src - at.src
 
         root = f"All-time average {pr.split_str()} split{pr.tr_str()} for {pr.player_str()} is {at} (sample: {ld}). Last {num} average is {newest}. "
@@ -542,7 +546,7 @@ class Bot(commands.Bot):
             # faster :)
             root += f'That is roughly {td(diff)} faster, nice!'
         
-        return await ctx.send(root)
+        return await do_send(ctx, root)
 
     @commands.command()
     async def bastion_breakdown(self, ctx: commands.Context, *args):
@@ -574,7 +578,7 @@ class Bot(commands.Bot):
             ]
             if x != '' 
         ])
-        await ctx.send(f'Bastion conversion breakdown for {pr.player_str()}{pr.tr_str()}: {brk}')
+        await do_send(ctx, f'Bastion conversion breakdown for {pr.player_str()}{pr.tr_str()}: {brk}')
 
     ########################################################################################
     ############################# Methods for AA leaderboard ###############################
@@ -592,7 +596,7 @@ class Bot(commands.Bot):
             board = args[0]
             search_term = args[1].strip()
         else:
-            return await ctx.send('Invalid number of arguments. Usage: ?aalb [board] <search>')
+            return await do_send(ctx, 'Invalid number of arguments. Usage: ?aalb [board] <search>')
         uri = open(localfile("bad_aalb")).read().strip()
         board = re.sub(r'[^a-zA-Z0-9\.]', '_', board).lstrip('.')
 
@@ -615,18 +619,18 @@ class Bot(commands.Bot):
         try:
             res = get(uri)
             if res.status_code != 200:
-                return await ctx.send('Unable to fetch the leaderboard.')
+                return await do_send(ctx, 'Unable to fetch the leaderboard.')
             data = res.json()
             if 'results' not in data or not data['results']:
-                return await ctx.send('No results found.')
+                return await do_send(ctx, 'No results found.')
             first_result = data['results'][0].get('run', {})
             place = first_result.get('place', '?')
             board = data.get('board', board)
             players = ', '.join([player for player in first_result.get('players', [])])
             completion_time = first_result.get('completionTime', '∞')
-            return await ctx.send(f'{board} #{place}: {players} ({completion_time})')
+            return await do_send(ctx, f'{board} #{place}: {players} ({completion_time})')
         except Exception:
-            return await ctx.send('Unable to fetch the leaderboard.')
+            return await do_send(ctx, 'Unable to fetch the leaderboard.')
 
 
 if __name__ == '__main__':
