@@ -27,7 +27,7 @@ use rspotify::prelude::*;
 #[cfg(feature = "audio")]
 use folderbot::audio::Audio;
 use folderbot::{command_tree::{CmdValue, CommandNode, CommandTree}, trident::file_greet_response};
-use folderbot::commands::aaleaderboard::AALeaderboard;
+use folderbot::commands::anyleaderboard::LeaderboardClient;
 use folderbot::commands::mcsr::lookup;
 use folderbot::db::game::GameState;
 use folderbot::db::player::{Player, PlayerData, PlayerScratch};
@@ -269,7 +269,7 @@ struct IRCBotClient {
     autosave: bool,
     spotify: SpotifyChecker,
     player_data: PlayerData,
-    aa_leaderboard: AALeaderboard,
+    any_leaderboard: Option<LeaderboardClient>,
     yahtzee: Option<folderbot::yahtzee::Yahtzee>,
 }
 
@@ -329,7 +329,7 @@ impl IRCBotClient {
                 autosave: false,
                 spotify: SpotifyChecker::new().await,
                 player_data: PlayerData::new(),
-                aa_leaderboard: AALeaderboard::new(),
+                any_leaderboard: LeaderboardClient::new(),
                 yahtzee: folderbot::yahtzee::Yahtzee::load_from_default_file(),
             },
             IRCBotMessageSender {
@@ -1399,33 +1399,36 @@ impl IRCBotClient {
                 }
             }
             "feature:aaleaderboard" => {
-                if let Some(err) = self.aa_leaderboard.fetch_if_required().await {
-                    send_msg(&err).await;
+                if self.any_leaderboard.is_none() {
+                    println!("Leaderboard client not loaded");
                     return Command::Continue;
                 }
+                let lb = self.any_leaderboard.as_ref().unwrap();
                 let trimmed_args = trim_args_end(&args);
-                let msg = if trimmed_args.is_empty() {
-                    format!("{}. Try \"!aalb top\" to see the top 5 runs. You can also search a rank or player with \"!aalb <rank/name>\".", self.aa_leaderboard.info_for_streamer())
-                } else if trimmed_args == "top" {
-                    self.aa_leaderboard.top_info()
-                } else if trimmed_args == "best" || trimmed_args == "fastest" {
-                    self.aa_leaderboard.best_time()
-                } else if trimmed_args == "worst" {
-                    "Let's not name and shame the worst. smh".to_string()
-                } else if trimmed_args == "slowest" {
-                    self.aa_leaderboard.slowest_time()
-                } else if trimmed_args == "reload" && self.ct.admins.contains(&user) {
-                    self.aa_leaderboard.unload();
-                    "OK, I will reload the leaderboard folderSus".to_string()
-                } else {
-                    // if someone has a username that's all numbers, lol gg
-                    match trimmed_args.parse::<u32>().ok().filter(|n| *n > 0) {
-                        Some(rank) => self.aa_leaderboard.info_at_rank(rank),
-                        None => self.aa_leaderboard.info_for_name(trimmed_args.to_string()),
+                match lb.search(folderbot::commands::anyleaderboard::LeaderboardGameCategory::AllAdvancements, trimmed_args).await {
+                    Ok(msg) => {
+                        reply_and_continue!(&msg);
+                    },
+                    Err(_) => {
+                        reply_and_continue!(&"Erm something went wrong".into());
                     }
-                };
-
-                send_msg(&msg).await;
+                }
+            }
+            "feature:anypleaderboard" => {
+                if self.any_leaderboard.is_none() {
+                    println!("Leaderboard client not loaded");
+                    return Command::Continue;
+                }
+                let lb = self.any_leaderboard.as_ref().unwrap();
+                let trimmed_args = trim_args_end(&args);
+                match lb.search(folderbot::commands::anyleaderboard::LeaderboardGameCategory::AnyPercent, trimmed_args).await {
+                    Ok(msg) => {
+                        reply_and_continue!(&msg);
+                    },
+                    Err(_) => {
+                        reply_and_continue!(&format!("Sorry, I don't know who {} is. smh", trimmed_args));
+                    }
+                }
             }
             "feature:yahtzee" => {
                 let yahtzee = match self.yahtzee.as_mut() {

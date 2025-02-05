@@ -26,3 +26,4 @@ yahtzee.json
 auth/*
 .env
 .spotify_token_cache.json
+.roroapi.json
