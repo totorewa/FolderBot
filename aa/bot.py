@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Callable, Optional
+from aalb import AALeaderboard
 from twitchio import Chatter, Message, PartialChatter
 from twitchio.ext import commands
 from daemon import data_dir, datafile, seconds_since_update, duration_since_update
@@ -584,53 +585,14 @@ class Bot(commands.Bot):
     ############################# Methods for AA leaderboard ###############################
     ########################################################################################
     @commands.command()
-    async def aalb(self, ctx: commands.Context, *args):
-        from daemon import localfile
-        from requests import get 
-        import re
+    async def aalb(self, ctx: commands.Context):
         self.add(ctx, 'aalb')
-        if len(args) <= 1:
-            board = 'rsg'
-            search_term = args[0].strip() if len(args) > 0 else self.playername(ctx)
-        elif len(args) == 2:
-            board = args[0]
-            search_term = args[1].strip()
-        else:
-            return await do_send(ctx, 'Invalid number of arguments. Usage: ?aalb [board] <search>')
-        uri = open(localfile("bad_aalb")).read().strip()
-        board = re.sub(r'[^a-zA-Z0-9\.]', '_', board).lstrip('.')
-
-        if search_term.isdigit():
-            search_type = 'place'
-        elif ':' in search_term:
-            if search_term.startswith('<'):
-                search_type = 'ltetime'
-                search_term = search_term[1:]
-            elif search_term.startswith('>'):
-                search_type = 'gtetime'
-                search_term = search_term[1:]
-            else:
-                search_type = 'gtetime'
-            if search_term.count(':') == 1: # API expects HH:mm:ss but we want users to be able to use HH:mm
-                search_term += ':00'
-        else:
-            search_type = 'name'
-        uri = uri.format(BOARD=board, FILTER_TYPE=search_type, FILTER_VALUE=search_term)
         try:
-            res = get(uri)
-            if res.status_code != 200:
-                return await do_send(ctx, 'Unable to fetch the leaderboard.')
-            data = res.json()
-            if 'results' not in data or not data['results']:
-                return await do_send(ctx, 'No results found.')
-            first_result = data['results'][0].get('run', {})
-            place = first_result.get('place', '?')
-            board = data.get('board', board)
-            players = ', '.join([player for player in first_result.get('players', [])])
-            completion_time = first_result.get('completionTime', '∞')
-            return await do_send(ctx, f'{board} #{place}: {players} ({completion_time})')
+            args = ctx.message.content.split(' ')[1:]
+            response = await self.aaleaderboard.query(self.playername(ctx), args)
+            return await do_send(ctx, response or 'Unable to query the leaderboard.')
         except Exception:
-            return await do_send(ctx, 'Unable to fetch the leaderboard.')
+            return await do_send(ctx, 'Unable to query the leaderboard.')
 
 
 if __name__ == '__main__':
