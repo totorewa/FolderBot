@@ -11,6 +11,11 @@ from sys import argv
 async def do_send(ctx: commands.Context, s: str):
     return await ctx.send(s.lstrip('?!/'))
 
+def ui(user_input: str) -> str:
+    if user_input and not user_input[0].isalnum():
+        return f'"{user_input}"'
+    return user_input
+
 
 class ParseResult:
     def __init__(self, split: Optional[str], player: str, time: Optional[td]) -> None:
@@ -366,14 +371,14 @@ class Bot(commands.Bot):
         split2 = split2.lower()
         for split in [split1, split2]:
             if not split in ALL_SPLITS:
-                return await do_send(ctx, f'{split} is not a valid AA split: {ALL_SPLITS}')
+                return await do_send(ctx, f'{ui(split)} is not a valid AA split: {ALL_SPLITS}')
 
         data = await pr.with_data(ctx)
         if data is None:
             return
         pcs = [p for p in data if p.filter(split=split1)]
         if len(pcs) == 0:
-            return await do_send(ctx, f'{pr.player_str()} has no known {split1} AA splits.')
+            return await do_send(ctx, f'{ui(pr.player_str())} has no known {split1} AA splits.')
         n = len(pcs)
         x = len([p for p in pcs if p.has(split2)])
         await do_send(ctx, f'{pctg(n, x)}% ({x} / {n}) of {pr.player_str()}\'s AA {split1} splits lead to starting {split2} splits.{pr.tr_str()}')
@@ -465,7 +470,7 @@ class Bot(commands.Bot):
         if pr.player == '!total':
             return await do_send(ctx, f'There are {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
         else:
-            return await do_send(ctx, f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
+            return await do_send(ctx, f'{ui(pr.player_str())} has {len(pcs)} known {pr.split_str()} times faster than {maximum}.{pr.tr_str()}')
 
     @commands.command()
     async def countgt(self, ctx: commands.Context, time: str, *args: str):
@@ -486,7 +491,7 @@ class Bot(commands.Bot):
         if pr.player == '!total':
             return await do_send(ctx, f'There are {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
         else:
-            return await do_send(ctx, f'{pr.player_str()} has {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
+            return await do_send(ctx, f'{ui(pr.player_str())} has {len(pcs)} known {pr.split_str()} times slower than {minimum}.{pr.tr_str()}')
 
     def playername(self, ctx: commands.Context, playername: Optional[str] = None) -> str:
         if playername and playername.strip() == '!total':

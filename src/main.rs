@@ -12,7 +12,6 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use rand::{thread_rng, Rng};
 use regex::Regex;
-use std::{ops::Sub, path::Path, sync::atomic::AtomicI8};
 use std::sync::Mutex;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -20,13 +19,13 @@ use std::{
     collections::HashMap,
     sync::atomic::{AtomicU64, Ordering},
 };
+use std::{ops::Sub, path::Path, sync::atomic::AtomicI8};
 
 use rspotify::model::{AdditionalType, PlayableItem};
 use rspotify::prelude::*;
 
 #[cfg(feature = "audio")]
 use folderbot::audio::Audio;
-use folderbot::{command_tree::{CmdValue, CommandNode, CommandTree}, trident::file_greet_response};
 use folderbot::commands::anyleaderboard::LeaderboardClient;
 use folderbot::commands::mcsr::lookup;
 use folderbot::db::game::GameState;
@@ -38,11 +37,15 @@ use folderbot::spotify::SpotifyChecker;
 use folderbot::trident::db_has_responses;
 use folderbot::trident::{db_random_response, has_responses, random_response};
 use folderbot::yahtzee::YahtzeeError;
+use folderbot::{
+    command_tree::{CmdValue, CommandNode, CommandTree},
+    trident::file_greet_response,
+};
 
 use libretranslate::{translate_url, Language};
-use surf::middleware::{Next, Middleware};
-use surf::{Client, Request, Response, Result};
 use std::time;
+use surf::middleware::{Middleware, Next};
+use surf::{Client, Request, Response, Result};
 
 use serde::{Deserialize, Serialize};
 
@@ -52,12 +55,7 @@ pub struct Logger;
 
 #[surf::utils::async_trait]
 impl Middleware for Logger {
-    async fn handle(
-        &self,
-        req: Request,
-        client: Client,
-        next: Next<'_>,
-    ) -> Result<Response> {
+    async fn handle(&self, req: Request, client: Client, next: Next<'_>) -> Result<Response> {
         println!("sending request to {}: {:?}", req.url(), req);
         let now = time::Instant::now();
         let res = next.run(req, client).await?;
@@ -194,7 +192,9 @@ impl IRCStream for TcpStream {
         // 0..9.
         let i: i8 = thread_rng().gen_range(0..10);
         // TRANSLATE_FRENCH(0) => 10 => always < min, so we never translate
-        let min: i8 = 10_i8.checked_sub(TRANSLATE_FRENCH.load(Ordering::Relaxed)).unwrap_or(10);
+        let min: i8 = 10_i8
+            .checked_sub(TRANSLATE_FRENCH.load(Ordering::Relaxed))
+            .unwrap_or(10);
         let has_flag = text.0.ends_with("    \r\n");
         if !text.0.starts_with("PRIVMSG") || i < min || has_flag {
             println!("Sending: '{}'", text.0.trim());
@@ -223,9 +223,7 @@ impl IRCStream for TcpStream {
             println!("Successfully translated.");
             let to_write = format!("{}:{}\r\n", first, res.output);
             println!("Translated to: '{}'", to_write.trim());
-            let _ = self
-                .write(to_write.as_bytes())
-                .await;
+            let _ = self.write(to_write.as_bytes()).await;
         } else {
             println!("Translation failed.");
             let _ = self.write(text.0.as_bytes()).await;
@@ -401,7 +399,10 @@ impl IRCBotClient {
             if pd.files > 1000 {
                 response_mod += 1.0;
             }
-            if pd.files > 10000 {
+            if pd.files > 7000 {
+                response_mod += 0.5;
+            }
+            if pd.files > 12000 {
                 response_mod += 0.5;
             }
 
@@ -412,15 +413,17 @@ impl IRCBotClient {
             if user == "pacmanmvc" && cmd.contains("opper") {
                 send_msg(&"Good day, PacManner.".to_string()).await;
             } else if has_responses(&ug) && thread_rng().gen_bool(3.0 / response_mod) {
-                println!("Sending USER user greet for {}", &user);
+                println!("Sending USER user greet (3.0 / {}) for {}", response_mod, &user);
                 let name = pd.name().clone();
                 self.send_msg(random_response(&ug).replace("{ur}", &name))
                     .await;
+            } else if thread_rng().gen_bool(1.0 / 10.0) {
+                println!("Sending 1/10 GENERIC user greet for {}", &user);
+                send_msg(&random_response("USER_GREET_GENERIC").replace("{ur}", &pd.name())).await;
             } else if let Some(file_resp) = file_greet_response(&name2, pd.files) {
                 println!("Sending FILE user greet for {}", &user);
                 self.send_msg(file_resp).await;
-            }
-            else {
+            } else {
                 // scale this with messages sent or file count? lol kind of ties back into
                 // reputation mechanism
                 if thread_rng().gen_bool(1.0 / 3.0) {
@@ -882,13 +885,24 @@ impl IRCBotClient {
                     "fr " => true,
                     "en " => false,
                     _ => {
-                        send_msg(&"Error: Must start with either fr or en (target language)".to_string()).await;
+                        send_msg(
+                            &"Error: Must start with either fr or en (target language)".to_string(),
+                        )
+                        .await;
                         return Command::Continue;
                     }
                 };
                 let source = args[3..].to_string();
-                let to_lang = if is_fr { Language::French } else { Language::English };
-                let from_lang = if !is_fr { Language::French } else { Language::English };
+                let to_lang = if is_fr {
+                    Language::French
+                } else {
+                    Language::English
+                };
+                let from_lang = if !is_fr {
+                    Language::French
+                } else {
+                    Language::English
+                };
 
                 if let Ok(res) = translate_url(
                     from_lang,
@@ -1421,12 +1435,21 @@ impl IRCBotClient {
                 }
                 let lb = self.any_leaderboard.as_ref().unwrap();
                 let trimmed_args = trim_args_end(&args);
-                match lb.search(folderbot::commands::anyleaderboard::LeaderboardGameCategory::AnyPercent, trimmed_args).await {
+                match lb
+                    .search(
+                        folderbot::commands::anyleaderboard::LeaderboardGameCategory::AnyPercent,
+                        trimmed_args,
+                    )
+                    .await
+                {
                     Ok(msg) => {
                         reply_and_continue!(&msg);
-                    },
+                    }
                     Err(_) => {
-                        reply_and_continue!(&format!("Sorry, I don't know who {} is. smh", trimmed_args));
+                        reply_and_continue!(&format!(
+                            "Sorry, I don't know who {} is. smh",
+                            trimmed_args
+                        ));
                     }
                 }
             }
@@ -1516,14 +1539,25 @@ impl IRCBotClient {
                         pd.deaths += 1;
                         pd.death = Some(cur_time_or_0());
                         random_response("D20_FUMBLE")
-                    },
+                    }
                     20 => {
                         pd.max_d20_rolled += 1;
                         random_response("D20_CRIT_HIT")
-                    },
-                    _ => if rng.gen_bool(0.75) { "You rolled a {roll}, {ur}" } else { random_response("D20_GENERIC") },
+                    }
+                    _ => {
+                        if rng.gen_bool(0.75) {
+                            "You rolled a {roll}, {ur}"
+                        } else {
+                            random_response("D20_GENERIC")
+                        }
+                    }
                 };
-                send_msg(&response.replace("{roll}", &roll.to_string()).replace("{ur}", &nick)).await;
+                send_msg(
+                    &response
+                        .replace("{roll}", &roll.to_string())
+                        .replace("{ur}", &nick),
+                )
+                .await;
             }
             #[cfg(feature = "audio")]
             "admin:mute" => {
@@ -1567,7 +1601,11 @@ impl IRCBotClient {
                         return Command::Continue;
                     }
                 }
-                send_msg(&format!("{} is not a valid translation percentage. Must be 0..=10.", &args)).await;
+                send_msg(&format!(
+                    "{} is not a valid translation percentage. Must be 0..=10.",
+                    &args
+                ))
+                .await;
             }
             "feature:elo" => {
                 log_res("Doing elo things");
