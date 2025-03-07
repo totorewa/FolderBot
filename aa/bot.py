@@ -99,6 +99,7 @@ class Bot(commands.Bot):
     def __init__(self, prefix='?'):
         import json
         self.prefix = prefix
+        self.aaleaderboard = AALeaderboard()
         default_configuration = """
         {
             "folderbot": {
@@ -597,7 +598,8 @@ class Bot(commands.Bot):
             response = await self.aaleaderboard.query(self.playername(ctx), args)
             return await do_send(ctx, response or 'Unable to query the leaderboard.')
         except Exception:
-            return await do_send(ctx, 'Unable to query the leaderboard.')
+            await do_send(ctx, 'Unable to query the leaderboard.')
+            raise
 
 
 if __name__ == '__main__':
